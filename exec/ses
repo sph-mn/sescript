@@ -1,0 +1,35 @@
+#!/usr/bin/guile
+!#
+
+(import (sph) (sph filesystem)
+  (sph alist) (sph system reader)
+  (sph lang sescript) (sph stream) (ice-9 streams) (srfi srfi-1) (sph cli))
+
+(define (process input-port output-port)
+  (sescript->ecmascript (stream->list (port->stream input-port read-with-uppercase-symbols))
+    output-port))
+
+(define (each-input-file proc paths) (each (l (path) (call-with-input-file path proc)) paths))
+
+(define* (ses #:optional source-path . source+target-path)
+  (let*
+    ( (target-path (if (null? source+target-path) #f (last source+target-path)))
+      (source-path
+        (if source-path
+          (pair source-path (if target-path (drop-right source+target-path 1) (list))) (list))))
+    (if target-path
+      (call-with-output-file target-path
+        (l (target-file) (sescript-use-strict target-file)
+          (if (null? source-path) (process (current-input-port) target-file)
+            (each-input-file (l (source-file) (process source-file target-file)) source-path))))
+      (let (port (current-output-port)) (sescript-use-strict port)
+        (if (null? source-path) (process (current-input-port) port)
+          (each-input-file (l (source-file) (process source-file port)) source-path))))))
+
+(let
+  (options
+    (cli-apply #:help
+      "compile sescript to ecmascript reading from files or standard input, and writing to a file or standard out
+      depending on if paths are given as arguments."
+      #:options (q (((paths ...))))))
+  (apply ses (or (alist-ref options (q paths)) (list))))
