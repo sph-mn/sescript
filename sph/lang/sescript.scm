@@ -1,4 +1,4 @@
-;a scheme-data to ecmascript compiler
+;a scheme-datum to ecmascript compiler
 (library (sph lang sescript)
   (export sescript->ecmascript sescript->string sescript-use-strict)
   (import
@@ -14,22 +14,22 @@
     (sph lang ecmascript expressions)
     (sph lang sescript expressions))
 
-  (define (add-return-to-if arg)
+  (define (add-return-to-if arg) "list -> list"
     (list (pairs (q if) (first (tail arg)) (map add-return-statement (tail (tail arg))))))
 
-  (define (add-return-to-define arg) (list (list (q begin) arg (q (return undefined)))))
+  (define (add-return-to-define arg) "any -> list" (list (list (q begin) arg (q (return undefined)))))
 
-  (define (add-return-to-begin arg)
+  (define (add-return-to-begin arg) "list -> list"
     (list (list-replace-last arg
-      (l (arg-last)
-        (list (add-return-statement (last arg)))))))
+        (l (arg-last)
+          (list (add-return-statement (last arg)))))))
 
-  (define (add-return-to-set! arg)
+  (define (add-return-to-set! arg) "list -> list"
     (if (> (length arg) 3)
       (list (list (q begin) (drop-right arg 2) (list (q return) (pair (q set!) (take-right arg 2)))))
       (list (list (q return) arg))))
 
-  (define* (add-return-statement arg #:optional compile)
+  (define* (add-return-statement arg #:optional compile) "any boolean -> list"
     (if (list? arg)
       (list-replace-last arg
         (l (arg-last)
@@ -48,36 +48,35 @@
     ((compile body formals rest-formal)
       (begin
         (es-function (compile (pair (q begin) (add-return-statement body compile)))
-        (map ses-identifier formals)
-        #:rest (ses-identifier rest-formal)))
-      )
+          (map ses-identifier formals)
+          #:rest (ses-identifier rest-formal))))
     ((args ...) (ses-function args ... #f)))
 
-  (define (ses-ref base . keys)
+  (define (ses-ref base . keys) "string string ... -> string"
     (string-append base "[" (string-join keys "][") "]"))
 
-  (define (ses-library-name arg)
+  (define (ses-library-name arg) "list -> string"
     (string-join (map ses-identifier arg) "."))
 
-  (define (ses-library name exports imports body)
+  (define (ses-library name exports imports body) "list (list ...) (list ...) list -> list"
     (qq
-      (module.define (unquote (ses-library-name name)) (unquote (cons (q vector) (map ses-library-name imports)))
+      (module.define (unquote (ses-library-name name)) (unquote (pair (q vector) (map ses-library-name imports)))
         (lambda (exports)
           (unquote-splicing
             (append body
               (list (list (q exports) (list (q quote) (ses-environment exports))))))))))
 
-  (define identical-infix-token (q ("+" "-" "<" ">" "<=" ">=" "*" "/")))
-  (define translated-infix-token (q (
-        "eqv_p"
-        "string_append"
-        "="
-        "or"
-        "and"
-        "string_equal_p"
-        "equal_p"
-        "eq_p"
-        "string=")))
+  (define-as identical-infix-token list "+" "-" "<" ">" "<=" ">=" "*" "/")
+  (define-as translated-infix-token list
+    "eqv_p"
+    "string_append"
+    "="
+    "or"
+    "and"
+    "string_equal_p"
+    "equal_p"
+    "eq_p"
+    "string=")
 
   (define (translate-infix-token arg)
     (string-case arg
@@ -87,10 +86,10 @@
       ("or" "||")
       ("equal_p" "===")
       ("modulo" "%")
-      (raise (q cannot-convert-symbol-to-ecmascript))))
+      (throw (q cannot-convert-symbol-to-ecmascript))))
 
-  (define (ascend-expr->ecmascript arg)
-    ;these are applied when ascending the tree
+  (define (ascend-expr->ecmascript arg) "list/any -> string/any"
+    ;this is applied when ascending the tree
     (string-case (first arg)
       ("set_x" (apply es-set-nc! (tail arg)))
       ("chain" (apply es-chain (tail arg)))
@@ -110,7 +109,7 @@
       ("new" (string-append "new " (ses-apply (first (tail arg)) (tail (tail arg)))))
       ("environment" (ses-environment (tail arg)))
       ("return" (if (null? (tail arg)) "return" (ses-apply (first arg) (tail arg))))
-      ;throw cannot occur in an if-expression as is, example: 1?2:throw(3)
+      ;throw cannot occur in an if-expression as is, example of this: 1?2:throw(3). but if wrapped in a function it can
       ("throw" (es-apply-nc (es-function-nc (string-append "throw(" (ses-value (tail arg)) ")"))))
       (if (list? arg) (ses-apply (first arg) (tail arg)) arg)))
 
@@ -118,7 +117,7 @@
     (if (length-eq-one? arg) (first arg) (pair (q begin) arg)))
 
   (define (descend-expr->sescript arg compile)
-    ;these are applied when descending the tree, and the result is parsed again
+    ;this is applied when descending the tree, and the result will be parsed again
     (case (first arg)
       ((first)
         (qq (ref (unquote-splicing (tail arg)) 0)))
@@ -144,11 +143,11 @@
             (list (q define) name (pairs (q lambda) formals body)))
           (_ #f)))
       #;((set!)
-        (let (arguments (tail arg))
-          (if (> (length arguments) 2)
-            (pair (q begin)
-              (reverse (map-slice (l (name value) (list (q set!) name value)) 2 arguments)))
-            #f)))
+      (let (arguments (tail arg))
+      (if (> (length arguments) 2)
+      (pair (q begin)
+      (reverse (map-slice (l (name value) (list (q set!) name value)) 2 arguments)))
+      #f)))
       ((map)
         (match (tail arg)
           ((proc lis) (qq (chain map (unquote lis) (unquote proc))))))
@@ -189,7 +188,7 @@
                 (unquote
                   (if (null? args) last-arg
                     (list (q append)
-                      (cons (q vector) args)
+                      (pair (q vector) args)
                       last-arg))))))
           (_ (raise (q syntax-error-for-apply)))))
       ((cond)
@@ -227,13 +226,13 @@
           ((imports body ...)
             (qq
               (module
-                (unquote (cons (q vector)
+                (unquote (pair (q vector)
                     (map (l (ele) (string-join (map symbol->string ele) ".")) imports)))
-                (lambda () (unquote-splicing (append! body (list (q undefined))))))))
-          (_ (raise (q syntax-error-for-with-libraries-form)))))
+                (lambda () (unquote-splicing (append body (list (q undefined))))))))
+          (_ (throw (q syntax-error-for-with-libraries-form)))))
       (else #f)))
 
-  (define (contains-return-statement? arg)
+  (define (contains-return-statement? arg) "list -> boolean"
     (any
       (l (ele)
         (match ele
@@ -243,19 +242,19 @@
       arg))
 
   (define (descend-expr->ecmascript arg compile)
-    ;these are applied when descending the tree, and the result is not parsed again.
-    ;this is for expressions that create syntax that can not be created with ses or javascript syntax
+    ;this is applied when descending the tree, and the result will not be parsed again.
+    ;this is for expressions that create syntax that can not be created with other ses syntax
     (case (first arg)
       ;((if) (apply es-if-statement (map compile (tail arg))))
       ((if)
         (parenthesise (apply es-if
-          (map
-            (l (ele)
-              (match ele
-                (((quote begin) body ...)
-                  (parenthesise (string-join (map compile body) ",")))
-                (_ (compile ele))))
-            (tail arg)))))
+            (map
+              (l (ele)
+                (match ele
+                  (((quote begin) body ...)
+                    (parenthesise (string-join (map compile body) ",")))
+                  (_ (compile ele))))
+              (tail arg)))))
       ((lambda l)
         (let ((formals (first (tail arg))) (body (tail (tail arg))))
           (match formals
@@ -283,7 +282,7 @@
                             (if (eq? (q else) (first ele)) ele
                               (cons (list (q eqv?) (first cond) (first ele)) (tail ele))))
                           (tail cond)))))))))
-          (_ (raise (q syntax-error-for-guard)))))
+          (_ (throw (q syntax-error-for-guard)))))
       ((while)
         (match (tail arg)
           ((test body ...)
@@ -295,11 +294,11 @@
       ((quote) (list-ref arg 1))
       (else #f)))
 
-  (define (descend arg compile)
-    (let (res (descend-expr->sescript arg compile))
-      (if res (list res #t)
-        (let (res (descend-expr->ecmascript arg compile))
-          (if res (list res #f) (list #f #t))))))
+  (define (descend arg compile) "list procedure -> (match-result is-parsed-again)"
+    (let (r (descend-expr->sescript arg compile))
+      (if r (list r #t)
+        (let (r (descend-expr->ecmascript arg compile))
+          (if r (list r #f) (list #f #t))))))
 
   (define (sescript->ecmascript exprs port)
     "(expression ...) port ->"
@@ -310,7 +309,7 @@
     (tree-transform expr descend ascend-expr->ecmascript ses-value))
 
   (define (sescript-use-strict port)
-    "writes a \"use strict\"; command to port to set the following
+    "writes a \"use strict\"; command to port to the following
     code to be interpreted in the so called strict-mode.
-    this can appear multiple times in the output"
+    this can appear multiple times in the output without being an error"
     (display "\"use strict\";" port)))
