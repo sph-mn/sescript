@@ -40,6 +40,7 @@
               ((define) (add-return-to-define arg-last))
               ((return) (list arg-last))
               ((set!) (add-return-to-set! arg-last))
+              ((while) (list arg-last))
               (else (list (list (q return) arg-last))))
             (list (list (q return) arg-last)))))
       (list (q return) arg)))
