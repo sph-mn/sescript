@@ -12,15 +12,17 @@
     (sph lang ecmascript expressions)
     (only (guile) make-regexp string-join)
     (only (sph alist) alist)
-    (only (sph one) regexp-replace)
-    (only (sph string) string-equal?))
+    (only (sph one) regexp-match-replace alist->regexp-match-replacements))
 
   (define (ses-apply proc args) "symbol/string/any list -> string"
     (es-apply-nc (ses-identifier proc) (string-join (map ses-identifier args) ",")))
 
   (define identifier-replacements
-    (map (l (e) (pair (make-regexp (first e)) (tail e)))
-      (alist "->" "_to_" "-" "_" "\\?$" "_p" "!$" "_x")))
+    (alist->regexp-match-replacements
+      (alist
+        ;(regexp search-string . replacement)
+        "->" "_to_"
+        ".-" (pair "-" "_") ".\\?$" (pair "?" "_p") ".!$" (pair "!" "_x") ".\\+." (pair "+" "_and_"))))
 
   (define (ses-environment a)
     (es-object-nc
@@ -36,6 +38,4 @@
   (define (ses-value a) "any -> string"
     (if (symbol? a) (translate-identifier (symbol->string a)) (es-value a)))
 
-  (define (translate-identifier a) "string -> string"
-    (if (string-equal? "-" a) a
-      (fold (l (e r) (regexp-replace r (first e) (tail e))) a identifier-replacements))))
+  (define (translate-identifier a) (regexp-match-replace a identifier-replacements)))
