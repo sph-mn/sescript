@@ -73,10 +73,12 @@
     "(function(___v){return(((___v==2)?false:((___v==3)?true:undefined)))})((1+2));"
     (case (+ 1 2) (2 #t #f) (3 #t) (else 4 5))
     "(function(___v){return(((___v==2)?(true,false):((___v==3)?true:(4,5))))})((1+2));"
+    (guard (exc (else #f)) 1)
+    "(function(){try{return(1)}catch(exc){return(false)}})();"
     (guard (exc (#t 1) (test 2)) 3 4)
-    "(function(){try{3;return(4)}catch(exc){return(((exc==true)?1:((exc==test)?2:undefined)))}})();"
+    "(function(){try{3;return(4)}catch(exc){return((true?1:(test?2:undefined)))}})();"
     (guard (exc (#t 1) (test 2) (else 5)) 3 4)
-    "(function(){try{3;return(4)}catch(exc){return(((exc==true)?1:((exc==test)?2:5)))}})();"
+    "(function(){try{3;return(4)}catch(exc){return((true?1:(test?2:5)))}})();"
     (library (a b c) (export d e) (import (f) (g)) 1 2 3)
     "module.define(\"a.b.c\",[\"f\",\"g\"],(function(exports){1;2;3;return(exports({\"d\":d,\"e\":e}))}));"
     (library (a b c) (export d e) 1 2 3)
