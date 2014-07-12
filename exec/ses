@@ -2,8 +2,9 @@
 !#
 
 (import (sph) (sph filesystem)
+  (rnrs io ports) (only (sph two) search-env-path-variable)
   (sph alist) (sph system reader)
-  (sph lang sescript) (sph stream) (ice-9 streams) (srfi srfi-1) (sph cli))
+  (sph process) (sph lang sescript) (sph stream) (ice-9 streams) (srfi srfi-1) (sph cli))
 
 (define (process input-port output-port)
   (sescript->ecmascript (stream->list (port->stream input-port read-with-uppercase-symbols))
@@ -11,25 +12,55 @@
 
 (define (each-input-file proc paths) (each (l (path) (call-with-input-file path proc)) paths))
 
-(define* (ses #:optional source-path . source+target-path)
+(define uglifyjs
+  (let (uglifyjs-path (search-env-path-variable "uglifyjs"))
+    (and uglifyjs-path
+      (l (action)
+        (list (q port) (q port)
+          (case action
+            ( (compress)
+              (l (inp out) (execute-file uglifyjs-path "--compress" "--mangle" "--screw-ie8")))
+            ((format) (l (inp out) (display "\n") (execute-file uglifyjs-path "--beautify")))))))))
+
+(define* (ses #:optional post-process-action source-path . source+target-path)
   (let*
     ( (target-path (if (null? source+target-path) #f (last source+target-path)))
       (source-path
         (if source-path
           (pair source-path (if target-path (drop-right source+target-path 1) (list))) (list))))
+    ;this code can probably be compressed a lot
     (if target-path
       (call-with-output-file target-path
         (l (target-file) (sescript-use-strict target-file)
-          (if (null? source-path) (process (current-input-port) target-file)
-            (each-input-file (l (source-file) (process source-file target-file)) source-path))))
+          (if (and post-process-action uglifyjs)
+            (if (null? source-path)
+              (process-create-chain-with-paths/pipes (current-input-port) target-file
+                (list (q port) (q port) process) (uglifyjs post-process-action))
+              (process-create-chain-with-paths/pipes source-path target-file
+                (list (q any) (q port)
+                  (l (source-files out) (each-input-file (l (e) (process e out)) source-files)))
+                (uglifyjs post-process-action)))
+            (if (null? source-path) (process (current-input-port) target-file)
+              (each-input-file (l (source-file) (process source-file target-file)) source-path)))))
       (let (port (current-output-port)) (sescript-use-strict port)
-        (if (null? source-path) (process (current-input-port) port)
-          (each-input-file (l (source-file) (process source-file port)) source-path))))))
+        (if (and post-process-action uglifyjs)
+          (if (null? source-path)
+            (process-create-chain-with-paths/pipes (current-input-port) port
+              (list (q port) (q port) process) (uglifyjs post-process-action))
+            (process-create-chain-with-paths/pipes source-path port
+              (list (q any) (q port)
+                (l (source-files out) (each-input-file (l (e) (process e out)) source-files)))
+              (uglifyjs post-process-action)))
+          (if (null? source-path) (process (current-input-port) port)
+            (each-input-file (l (source-file) (process source-file port)) source-path)))))))
 
 (let
   (options
     (cli-apply #:help
       "compile sescript to ecmascript reading from files or standard input, and writing to a file or standard out
       depending on if paths are given as arguments."
-      #:options (q (((paths ...))))))
-  (apply ses (or (alist-ref options (q paths)) (list))))
+      #:options (q ((format #\f) (compress #\c) ((paths ...))))))
+  (apply ses
+    (or (and (alist-ref options (q format)) (q format))
+      (and (alist-ref options (q compress)) (q compress)))
+    (or (alist-ref options (q paths)) (list))))
