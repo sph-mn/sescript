@@ -19,10 +19,13 @@
 
   (define identifier-replacements
     (alist->regexp-match-replacements
+      ;(regexp search-string . replacement)
+      ;replaced in order
       (alist
-        ;(regexp search-string . replacement)
         "->" "_to_"
-        ".-" (pair "-" "_") ".\\?$" (pair "?" "_p") ".!$" (pair "!" "_x") ".\\+." (pair "+" "_and_"))))
+        ".-" (pair "-" "_")
+        ".!$" (pair "!" "_x")
+        "\\?" "_p" ".\\+." (pair "+" "_and_") "/" "_or_")))
 
   (define (ses-environment a)
     (es-object-nc
