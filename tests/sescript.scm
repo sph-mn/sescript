@@ -101,8 +101,8 @@
     "(\"a\"+\"b\"+\"c\");"
     (quote "var a = 3")
     "var a = 3;"
-    (let next ((a 1) (b 2))
-      (next (+ a 2) (+ b 1)))
+    (let loop ((a 1) (b 2))
+      (loop (+ a 2) (+ b 1)))
     "(function(next){next=(function(a,b){return(next((a+2),(b+1)))});return(next(1,2))})();"
     (apply a 1 2 (list 3 4))
     "a.apply(this,[1,2].concat([3,4]));"
