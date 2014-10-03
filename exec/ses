@@ -3,12 +3,17 @@
 
 (import (sph) (sph filesystem)
   (rnrs io ports) (only (sph two) search-env-path-variable)
-  (sph alist) (sph system reader)
-  (sph process) (sph lang sescript) (sph stream) (ice-9 streams) (srfi srfi-1) (sph cli))
+  (sph alist) (sph conditional)
+  (sph system reader) (sph process)
+  (sph lang sescript) (sph stream) (ice-9 streams) (srfi srfi-1) (sph cli))
 
 (define (process input-port output-port)
   (sescript->ecmascript (stream->list (port->stream input-port sph-read-with-upper-case-symbols))
-    output-port))
+    output-port
+    (pair
+      (ensure-trailing-slash
+        (pass-if (port-filename input-port) (l (a) (path->full-path (dirname a))) (getcwd)))
+      ses-default-load-paths)))
 
 (define (each-input-file proc paths) (each (l (path) (call-with-input-file path proc)) paths))
 
@@ -19,8 +24,8 @@
         (list (q port) (q port)
           (case action
             ( (compress)
-              (l (inp out) (execute-file uglifyjs-path "--compress" "--mangle" "--screw-ie8")))
-            ((format) (l (inp out) (display "\n") (execute-file uglifyjs-path "--beautify")))))))))
+              (l (inp out) (process-replace uglifyjs-path "--compress" "--mangle" "--screw-ie8")))
+            ((format) (l (inp out) (display "\n") (process-replace uglifyjs-path "--beautify")))))))))
 
 (define* (ses #:optional post-process-action source-path . source+target-path)
   (let*
