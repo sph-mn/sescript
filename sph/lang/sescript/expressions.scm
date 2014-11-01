@@ -21,7 +21,8 @@
     (alist->regexp-match-replacements
       ;(regexp search-string . replacement)
       ;replaced in order
-      (alist "->" "_to_"
+      (alist "^->" "to_"
+        "->" "_to_"
         ".-" (pair "-" "_")
         ".!$" (pair "!" "_x") "\\?" "_p" ".\\+." (pair "+" "_and_") "./." (pair "/" "_or_"))))
 
