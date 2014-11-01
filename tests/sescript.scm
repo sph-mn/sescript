@@ -45,11 +45,11 @@
     #\a "\"a\";"
     (vector 1 2 3) "[1,2,3];"
     (list 1 2) "[1,2];"
-    (assoc a 2 b 3) "{\"a\":2,\"b\":3};"
+    (object a 2 b 3) "{\"a\":2,\"b\":3};"
     (environment a b c) "{\"a\":a,\"b\":b,\"c\":c};"
     (chain c (chain a b) 1 2 "d") "b.a().c(1,2,\"d\");"
     "\"" "\"\\\"\";"
-    (assoc) "{};"
+    (object) "{};"
     (new Obj 3 5) "new Obj(3,5);"
     (not 1) "!1;"
     (if (not 1) a b) "(!1?a:b);"
@@ -88,7 +88,7 @@
     (map (lambda (a) #t) (vector 1 2 3))
     "[1,2,3].map((function(a){return(true)}));"
     (fold f (vector) (vector))
-    "[].reduce((function(___proc){return((function(prev,ele,index,arr){return(___proc(ele,prev,index,arr))}))})(f),[]);"
+    "[].reduce((function(___proc){return((function(prev,e,index,arr){return(___proc(e,prev,index,arr))}))})(f),[]);"
     (each (lambda (ele) ele) (vector))
     "[].forEach((function(ele){return(ele)}));"
     (string-join (vector "a" "b") "/")
@@ -103,7 +103,7 @@
     "var a = 3;"
     (let loop ((a 1) (b 2))
       (loop (+ a 2) (+ b 1)))
-    "(function(next){next=(function(a,b){return(next((a+2),(b+1)))});return(next(1,2))})();"
+    "(function(loop){loop=(function(a,b){return(loop((a+2),(b+1)))});return(loop(1,2))})();"
     (apply a 1 2 (list 3 4))
     "a.apply(this,[1,2].concat([3,4]));"
     ;a return keyword may not have an empty argument list appended
