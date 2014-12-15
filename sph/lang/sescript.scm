@@ -11,7 +11,6 @@
     (sph)
     (sph read-write)
     (sph filesystem)
-    (sph system reader)
     (sph string)
     (sph conditional)
     (only (sph tree) tree-transform)
@@ -158,7 +157,7 @@
             (search-load-path
               (string-append (first (tail a)) ".sjs")
               load-paths)
-            sph-read-with-upper-case-symbols)))
+            read)))
       ((map)
         (match (tail a)
           ((proc lis) (qq (chain map (unquote lis) (unquote proc))))))

@@ -4,11 +4,11 @@
 (import (sph) (sph filesystem)
   (rnrs io ports) (only (sph two) search-env-path-variable)
   (sph alist) (sph conditional)
-  (sph system reader) (sph process)
+  (sph process)
   (sph lang sescript) (sph stream) (ice-9 streams) (srfi srfi-1) (sph cli))
 
 (define (process input-port output-port)
-  (sescript->ecmascript (stream->list (port->stream input-port sph-read-with-upper-case-symbols))
+  (sescript->ecmascript (stream->list (port->stream input-port read))
     output-port
     (pair
       (ensure-trailing-slash
