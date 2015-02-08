@@ -7,7 +7,7 @@
     (guile)
     (ice-9 match)
     (only (sph alist) list->alist)
-    (only (sph list) any->list map-slice contains? improper-list-split-at-last length-eq-one? list-replace-last)
+    (only (sph list) any->list contains? improper-list-split-at-last length-eq-one? list-replace-last)
     (sph)
     (sph read-write)
     (sph filesystem)
