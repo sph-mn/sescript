@@ -318,4 +318,4 @@
     "writes a \"use strict\"; command to port to the following
     code to be interpreted in the so called strict-mode.
     this can appear multiple times in the output without being an error"
-    (display "\"use strict\";" port)))
+    (display "\"use strict\";\n" port)))
