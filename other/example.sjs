@@ -1,6 +1,6 @@
 (library (a test lib)
   (export change_path)
-  (import sph_cms.base jquery)
+  (import (sph-cms base) (jquery))
   (set! jquery.fn.input-observe
     (l (config)
       (let*

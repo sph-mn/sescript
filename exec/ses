@@ -1,11 +1,10 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (only (sph two) search-env-path-variable)
-  (sph lang sescript) (sph stream) (ice-9 streams))
+(import (sph common) (only (sph two) search-env-path-variable) (sph lang sescript))
 
 (define (process input-port output-port)
-  (sescript->ecmascript (stream->list (port->stream input-port read)) output-port
+  (sescript->ecmascript (rw-port->list read input-port) output-port
     (pair
       (ensure-trailing-slash
         (pass-if (port-filename input-port) (l (a) (path->full-path (dirname a))) (getcwd)))
