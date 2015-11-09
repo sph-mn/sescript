@@ -315,7 +315,8 @@
     (tree-transform expr (descend-proc load-paths) ascend-expr->ecmascript ses-value))
 
   (define (sescript-use-strict port)
-    "writes a \"use strict\"; command to port to the following
+    "port -> string
+    writes a \"use strict\"; command to port to the following
     code to be interpreted in the so called strict-mode.
     this can appear multiple times in the output without being an error"
     (display "\"use strict\";\n" port)))

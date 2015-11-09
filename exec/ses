@@ -3,7 +3,7 @@
 
 (import (sph common) (only (sph two) search-env-path-variable) (sph lang sescript))
 
-(define (process input-port output-port)
+(define (process input-port output-port) (sescript-use-strict output-port)
   (sescript->ecmascript (rw-port->list read input-port) output-port
     (pair
       (ensure-trailing-slash
@@ -20,7 +20,7 @@
           (case action
             ( (compress)
               (l (inp out) (process-replace uglifyjs-path "--compress" "--mangle" "--screw-ie8")))
-            ((format) (l (inp out) (display "\n") (process-replace uglifyjs-path "--beautify")))))))))
+            ((format) (l (inp out) (process-replace uglifyjs-path "--beautify")))))))))
 
 (define* (ses #:optional post-process-action source-path . source+target-path)
   (let*
@@ -31,26 +31,28 @@
     ;this code can probably be compressed a lot
     (if target-path
       (call-with-output-file target-path
-        (l (target-file) (sescript-use-strict target-file)
+        (l (target-file)
           (if (and post-process-action uglifyjs)
-            (if (null? source-path)
-              (process-create-chain-with-paths/pipes (current-input-port) target-file
-                (list (q port) (q port) process) (uglifyjs post-process-action))
-              (process-create-chain-with-paths/pipes source-path target-file
-                (list (q any) (q port)
-                  (l (source-files out) (each-input-file (l (e) (process e out)) source-files)))
-                (uglifyjs post-process-action)))
+            (process-chain-finished-successfully?
+              (if (null? source-path)
+                (process-create-chain-with-paths/pipes (current-input-port) target-file
+                  (list (q port) (q port) process) (uglifyjs post-process-action))
+                (process-create-chain-with-paths/pipes source-path target-file
+                  (list (q any) (q port)
+                    (l (source-files out) (each-input-file (l (e) (process e out)) source-files)))
+                  (uglifyjs post-process-action))))
             (if (null? source-path) (process (current-input-port) target-file)
               (each-input-file (l (source-file) (process source-file target-file)) source-path)))))
-      (let (port (current-output-port)) (sescript-use-strict port)
+      (let (port (current-output-port))
         (if (and post-process-action uglifyjs)
-          (if (null? source-path)
-            (process-create-chain-with-paths/pipes (current-input-port) port
-              (list (q port) (q port) process) (uglifyjs post-process-action))
-            (process-create-chain-with-paths/pipes source-path port
-              (list (q any) (q port)
-                (l (source-files out) (each-input-file (l (e) (process e out)) source-files)))
-              (uglifyjs post-process-action)))
+          (process-chain-finished-successfully?
+            (if (null? source-path)
+              (process-create-chain-with-paths/pipes (current-input-port) port
+                (list (q port) (q port) process) (uglifyjs post-process-action))
+              (process-create-chain-with-paths/pipes source-path port
+                (list (q any) (q port)
+                  (l (source-files out) (each-input-file (l (e) (process e out)) source-files)))
+                (uglifyjs post-process-action))))
           (if (null? source-path) (process (current-input-port) port)
             (each-input-file (l (source-file) (process source-file port)) source-path)))))))
 
