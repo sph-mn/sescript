@@ -1,15 +1,11 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph filesystem)
-  (rnrs io ports) (only (sph two) search-env-path-variable)
-  (sph alist) (sph conditional)
-  (sph process)
-  (sph lang sescript) (sph stream) (ice-9 streams) (srfi srfi-1) (sph cli))
+(import (sph common) (only (sph two) search-env-path-variable)
+  (sph lang sescript) (sph stream) (ice-9 streams))
 
 (define (process input-port output-port)
-  (sescript->ecmascript (stream->list (port->stream input-port read))
-    output-port
+  (sescript->ecmascript (stream->list (port->stream input-port read)) output-port
     (pair
       (ensure-trailing-slash
         (pass-if (port-filename input-port) (l (a) (path->full-path (dirname a))) (getcwd)))
@@ -20,7 +16,7 @@
 (define uglifyjs
   (let (uglifyjs-path (search-env-path-variable "uglifyjs"))
     (and uglifyjs-path
-      (l (action)
+      (l (action) "symbol:compress/format -> list:process-chain-config"
         (list (q port) (q port)
           (case action
             ( (compress)
@@ -61,11 +57,12 @@
 
 (let
   (options
-    ( (cli-create #:help
-        "compile sescript to ecmascript reading from files or standard input, and writing to a file or standard out
-      depending on if paths are given as arguments."
-        #:options (q ((format #\f) (compress #\c) ((paths ...)))))))
+    ( (cli-create #:description
+        "compile sescript to ecmascript reading from files or standard input, and writing to a file or standard out depending on if paths are given as arguments."
+        #:options
+        (ql (format #\f #f #f #f #f "format output with uglifyjs")
+          (compress #\c #f #f #f #f "compress output with uglifyjs") ((paths ...))))))
   (apply ses
-    (or (and (alist-ref options (q format)) (q format))
-      (and (alist-ref options (q compress)) (q compress)))
-    (or (alist-ref options (q paths)) (list))))
+    (or (and (symbol-alist-ref options format) (q format))
+      (and (symbol-alist-ref options compress) (q compress)))
+    (or (symbol-alist-ref options paths) (list))))
