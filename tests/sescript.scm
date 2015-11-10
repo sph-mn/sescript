@@ -57,7 +57,7 @@
     (= 1 2 3) "(1==2==3);"
     (equal? a 1) "(a===1);"
     #t "true;"
-    ;(sph test) cannot handle #f - sescript can, tested manually
+    ;(sph test) can currently not deal with #f - sescript can, tested manually
     ;#f "false"
     (begin 1 (begin 2 3)) "1;2;3;"
     (cond
