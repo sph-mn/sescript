@@ -7,7 +7,7 @@
   (sescript->ecmascript (rw-port->list read input-port) output-port
     (pair
       (ensure-trailing-slash
-        (pass-if (port-filename input-port) (l (a) (path->full-path (dirname a))) (getcwd)))
+        (if-pass (port-filename input-port) (l (a) (path->full-path (dirname a))) (getcwd)))
       ses-default-load-paths)))
 
 (define (each-input-file proc paths) (each (l (path) (call-with-input-file path proc)) paths))

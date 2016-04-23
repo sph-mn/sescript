@@ -29,7 +29,7 @@
 
   (define ses-default-load-paths
     (map ensure-trailing-slash
-      (pass-if (getenv "SES_LOAD_PATH") (l (a) (string-split a #\:)) (list))))
+      (if-pass (getenv "SES_LOAD_PATH") (l (a) (string-split a #\:)) (list))))
 
   (define (add-return-to-if a) "list -> list"
     (list (pairs (q if) (first (tail a)) (map add-return-statement (tail (tail a))))))
