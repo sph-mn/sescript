@@ -64,6 +64,6 @@
         (ql (format #\f #f #f #f #f "format output with uglifyjs")
           (compress #\c #f #f #f #f "compress output with uglifyjs") ((paths ...))))))
   (apply ses
-    (or (and (alist-quoted-ref options format) (q format))
-      (and (alist-quoted-ref options compress) (q compress)))
-    (or (alist-quoted-ref options paths) (list))))
+    (or (and (alist-q-ref options format) (q format))
+      (and (alist-q-ref options compress) (q compress)))
+    (or (alist-q-ref options paths) (list))))
