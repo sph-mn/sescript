@@ -59,10 +59,10 @@
 (let
   (options
     ( (cli-create #:description
-        "compile sescript to ecmascript reading from files or standard input, and writing to a file or standard out depending on if paths are given as arguments."
+        "compile sescript to ecmascript reading from files or standard input, and writing to a file or standard output depending on if paths are given as arguments"
         #:options
-        (ql (format #\f #f #f #f #f "format output with uglifyjs")
-          (compress #\c #f #f #f #f "compress output with uglifyjs") ((paths ...))))))
+        (ql (format #:names #\f #:description "format output with uglifyjs")
+          (compress #:names #\c #:description "compress output with uglifyjs") ((paths ...))))))
   (apply ses
     (or (and (alist-q-ref options format) (q format))
       (and (alist-q-ref options compress) (q compress)))
