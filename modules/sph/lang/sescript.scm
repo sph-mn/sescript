@@ -1,5 +1,3 @@
-;a scheme-datum to ecmascript compiler
-
 (library (sph lang sescript)
   (export
     ses-default-load-paths
@@ -26,6 +24,8 @@
       length-eq-one?
       list-replace-last)
     (only (sph tree) tree-transform))
+
+  ;a scheme-datum to ecmascript compiler
 
   (define ses-default-load-paths
     (map ensure-trailing-slash
