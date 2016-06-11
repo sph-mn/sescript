@@ -19,6 +19,7 @@
     (only (sph alist) list->alist)
     (only (sph list)
       any->list
+      any->list-s
       contains?
       improper-list-split-at-last
       length-eq-one?
@@ -86,6 +87,23 @@
     (string-case a (("=" "eqv_p" "eq_p" "string_equal_p" "string=") "==")
       ("string_append" "+") ("and" "&&")
       ("or" "||") ("equal_p" "===") ("modulo" "%") (throw (q cannot-convert-symbol-to-ecmascript))))
+
+  (define (ses-case a)
+    (match a
+      ( (expr cond ...)
+        (quasiquote
+          ( (lambda (___v)
+              (cond
+                (unquote-splicing
+                  (map
+                    (l (e)
+                      (if (equal? (q else) (first e)) e
+                        (pair
+                          (pair (q and)
+                            (map (l (a) (list (q equal?) (q ___v) a)) (any->list-s (first e))))
+                          (tail e))))
+                    cond))))
+            (unquote expr))))))
 
   (define (ascend-expr->ecmascript a) "list/any -> string/any"
     ;this is applied when ascending the tree, and the arguments have already been processed
@@ -177,19 +195,7 @@
                 ((test consequent ...) (list (q if) test (add-begin-if-multiple consequent))))
               (tail cond)))
           (q false)))
-      ( (case)
-        (match (tail a)
-          ( (expr cond ...)
-            (quasiquote
-              ( (lambda (___v)
-                  (cond
-                    (unquote-splicing
-                      (map
-                        (l (e)
-                          (if (eqv? (q else) (first e)) e
-                            (pair (list (q eqv?) (q ___v) (first e)) (tail e))))
-                        cond))))
-                (unquote expr))))))
+      ((case) (ses-case (tail a)))
       ( (library)
         (match (tail a)
           ( ( (name ...) ((quote export) . exports) ((quote import) . imports) . body)
