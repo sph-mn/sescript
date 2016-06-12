@@ -59,7 +59,7 @@
             (list (list (q return) a-last)))))
       (list (q return) a)))
 
-  (define-as statement-prefixes ql define while return)
+  (define-as statement-prefixes ql define while)
 
   (define (contains-statement? a) "list -> boolean"
     (match a
@@ -68,15 +68,16 @@
       (_ (and (list? a) (any contains-statement? a)))))
 
   (define (ses-if a compile)
-    (if (contains-statement? a) (compile (qq ((thunk (unquote (pair (q if*) a))))))
-      (parenthesise
-        (apply es-if
-          (map
-            (l (e)
-              (match e
-                (((quote begin) body ...) (parenthesise (string-join (map compile body) ",")))
-                (_ (compile e))))
-            a)))))
+    (if (contains-return-statement? a) (compile (pair (q if*) a))
+      (if (contains-statement? a) (compile (qq ((thunk (unquote (pair (q if*) a))))))
+        (parenthesise
+          (apply es-if
+            (map
+              (l (e)
+                (match e
+                  (((quote begin) body ...) (parenthesise (string-join (map compile body) ",")))
+                  (_ (compile e))))
+              a))))))
 
   (define (contains-return-statement? a) "list -> boolean"
     (any
