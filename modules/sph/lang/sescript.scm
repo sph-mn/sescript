@@ -110,6 +110,7 @@
     (string-case (first a) ("set_x" (apply es-set-nc! (tail a)))
       ("chain" (apply es-chain (tail a))) ("begin" (string-join (tail a) ";"))
       ("define" (apply es-define-nc (tail a)))
+      ("declare" (apply es-declare-nc (tail a)))
       ("not" (string-append "!" (apply string-append (tail a))))
       ("object" (es-object-nc (list->alist (tail a)))) ("ref" (apply ses-ref (tail a)))
       ("#t" "true") ("#f" "false")
