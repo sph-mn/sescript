@@ -32,18 +32,16 @@
     (map ensure-trailing-slash
       (if-pass (getenv "SES_LOAD_PATH") (l (a) (string-split a #\:)) (list))))
 
-  (define (add-return-to-if a) "list -> list"
-    (list (pairs (q if) (first (tail a)) (map add-return-statement (tail (tail a))))))
-
   (define (add-return-to-define a) "any -> list" (list (list (q begin) a (q (return undefined)))))
 
   (define (add-return-to-begin a) "list -> list"
     (list (list-replace-last a (l (a-last) (list (add-return-statement (last a)))))))
 
   (define (add-return-to-set! a) "list -> list"
-    (if (> (length a) 3)
-      (list (list (q begin) (drop-right a 2) (list (q return) (pair (q set!) (take-right a 2)))))
-      (list (list (q return) a))))
+    (list
+      (if (> (length a) 3)
+        (list (q begin) (drop-right a 2) (list (q return) (pair (q set!) (take-right a 2))))
+        (list (q return) a))))
 
   (define* (add-return-statement a #:optional compile) "any boolean -> list"
     (if (list? a)
@@ -52,11 +50,40 @@
           ;non-expressions can not be used in a return statement. the following catches only a few cases
           (if (and (list? a-last) (not (null? a-last)))
             (case (first a-last) ((begin) (add-return-to-begin a-last))
-              ((define) (add-return-to-define a-last)) ((return) (list a-last))
-              ((set!) (add-return-to-set! a-last)) ((while) (list a-last))
-              (else (list (list (q return) a-last))))
+              ((define) (add-return-to-define a-last))
+              ( (if*)
+                (let (a-last-tail (tail a-last))
+                  (pair (first a-last-tail) (map add-return-statement (tail a-last-tail)))))
+              ((return) (list a-last)) ((set!) (add-return-to-set! a-last))
+              ((while) (list a-last)) (else (list (list (q return) a-last))))
             (list (list (q return) a-last)))))
       (list (q return) a)))
+
+  (define-as statement-prefixes ql define while return)
+
+  (define (contains-statement? a) "list -> boolean"
+    (match a
+      ( ( (? symbol? prefix) rest ...)
+        (or (contains? statement-prefixes prefix) (contains-statement? rest)))
+      (_ (and (list? a) (any contains-statement? a)))))
+
+  (define (ses-if a compile)
+    (if (contains-statement? a) (compile (qq ((thunk (unquote (pair (q if*) a))))))
+      (parenthesise
+        (apply es-if
+          (map
+            (l (e)
+              (match e
+                (((quote begin) body ...) (parenthesise (string-join (map compile body) ",")))
+                (_ (compile e))))
+            a)))))
+
+  (define (contains-return-statement? a) "list -> boolean"
+    (any
+      (l (e)
+        (match e (((quote return) _ ...) #t)
+          (((quote begin) rest ...) (contains-return-statement? rest)) (_ #f)))
+      a))
 
   (define-syntax-rules ses-function
     ( (compile body formals rest-formal)
@@ -88,6 +115,9 @@
       ("string_append" "+") ("and" "&&")
       ("or" "||") ("equal_p" "===") ("modulo" "%") (throw (q cannot-convert-symbol-to-ecmascript))))
 
+  (define-syntax-rule (add-begin-if-multiple a)
+    (if (length-eq-one? a) (first a) (pair (q begin) a)))
+
   (define (ses-case a)
     (match a
       ( (expr cond ...)
@@ -109,8 +139,7 @@
     ;this is applied when ascending the tree, and the arguments have already been processed
     (string-case (first a) ("set_x" (apply es-set-nc! (tail a)))
       ("chain" (apply es-chain (tail a))) ("begin" (string-join (tail a) ";"))
-      ("define" (apply es-define-nc (tail a)))
-      ("declare" (apply es-declare-nc (tail a)))
+      ("define" (apply es-define-nc (tail a))) ("declare" (apply es-declare-nc (tail a)))
       ("not" (string-append "!" (apply string-append (tail a))))
       ("object" (es-object-nc (list->alist (tail a)))) ("ref" (apply ses-ref (tail a)))
       ("#t" "true") ("#f" "false")
@@ -125,9 +154,6 @@
       ;throw cannot occur in an if-expression as is, example of this: 1?2:throw(3). but if wrapped in a function it can
       ("throw" (es-apply-nc (es-function-nc (string-append "throw(" (ses-value (tail a)) ")"))))
       (if (list? a) (ses-apply (first a) (tail a)) a)))
-
-  (define-syntax-rule (add-begin-if-multiple a)
-    (if (length-eq-one? a) (first a) (pair (q begin) a)))
 
   (define (descend-expr->sescript a compile load-paths)
     ;this is applied when descending the tree, and the result will be parsed again
@@ -196,7 +222,7 @@
                 ((test consequent ...) (list (q if) test (add-begin-if-multiple consequent))))
               (tail cond)))
           (q false)))
-      ((case) (ses-case (tail a)))
+      ((case) (ses-case (tail a))) ((thunk) (qq (lambda () (unquote-splicing (tail a)))))
       ( (library)
         (match (tail a)
           ( ( (name ...) ((quote export) . exports) ((quote import) . imports) . body)
@@ -214,27 +240,10 @@
           (_ (throw (q syntax-error-for-with-libraries-form)))))
       (else #f)))
 
-  (define (contains-return-statement? a) "list -> boolean"
-    (any
-      (l (e)
-        (match e (((quote return) _ ...) #t)
-          (((quote begin) rest ...) (contains-return-statement? rest)) (_ #f)))
-      a))
-
   (define (descend-expr->ecmascript a compile)
     ;this is applied when descending the tree, and the result will not be parsed again.
     ;this is for expressions that create syntax that can not be created with other ses syntax
-    (case (first a)
-      ;((if) (apply es-if-statement (map compile (tail a))))
-      ( (if)
-        (parenthesise
-          (apply es-if
-            (map
-              (l (e)
-                (match e
-                  (((quote begin) body ...) (parenthesise (string-join (map compile body) ",")))
-                  (_ (compile e))))
-              (tail a)))))
+    (case (first a) ((if) (ses-if (tail a) compile))
       ( (lambda l)
         (let ((formals (first (tail a))) (body (tail (tail a))))
           (match formals ((or (formal ...) (? symbol? formal)) (ses-function compile body formal))
@@ -258,7 +267,7 @@
             (es-statement-nc "while" (compile (pair (q begin) body))
               (if (and (list? test) (eqv? (q set) (first test))) (parenthesise (compile test))
                 (compile test))))))
-      ((quote) (list-ref a 1)) (else #f)))
+      ((quote) (list-ref a 1)) ((if*) (apply es-if-statement (map compile (tail a)))) (else #f)))
 
   (define (descend-proc load-paths)
     (l (a compile) "list procedure -> (match-result is-parsed-again)"
