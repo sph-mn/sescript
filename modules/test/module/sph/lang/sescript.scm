@@ -30,7 +30,7 @@
       (append (list 1 2) (list 3 4)) "[1,2].concat([3,4]);"
       (append a b) "a.concat(b);"
       (tail (list 1 2)) "[1,2].slice(1);"
-      (vector 1 2 3) "[1,2,3];"
+      (array 1 2 3) "[1,2,3];"
       (list 1 2) "[1,2];"
       (object a 2 b 3) "{\"a\":2,\"b\":3};"
       (environment a b c) "{\"a\":a,\"b\":b,\"c\":c};"
@@ -63,11 +63,11 @@
       "module.define(\"a.b.c\",[],(function(exports){1;2;3;return(exports({\"d\":d,\"e\":e}))}));"
       (with-libraries ((a b c) (d e) (f g)) 1 2 3)
       "module([\"a.b.c\",\"d.e\",\"f.g\"],(function(){1;2;3;return(undefined)}));"
-      (map (lambda (a) #t) (vector 1 2 3)) "[1,2,3].map((function(a){return(true)}));"
-      (fold f (vector) (vector))
+      (map (lambda (a) #t) (array 1 2 3)) "[1,2,3].map((function(a){return(true)}));"
+      (fold f (array) (array))
       "[].reduce((function(___proc){return((function(prev,e,index,arr){return(___proc(e,prev,index,arr))}))})(f),[]);"
-      (each (lambda (ele) ele) (vector)) "[].forEach((function(ele){return(ele)}));"
-      (string-join (vector "a" "b") "/") "[\"a\",\"b\"].join(\"/\");"
+      (each (lambda (ele) ele) (array)) "[].forEach((function(ele){return(ele)}));"
+      (string-join (array "a" "b") "/") "[\"a\",\"b\"].join(\"/\");"
       (make-regexp "[^a-b0-9]" "g") "/[^a-b0-9]/g;"
       (length (list 1)) "[1].length;"
       (string-append "a" "b" "c") "(\"a\"+\"b\"+\"c\");"
