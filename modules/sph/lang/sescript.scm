@@ -106,10 +106,10 @@
           (unquote-splicing
             (append body (list (list (q exports) (list (q quote) (ses-environment exports))))))))))
 
-  (define-as identical-infix-token list "+" "-" "<" ">" "<=" ">=" "*" "/")
+  (define-as identical-infix-token list "+" "-" "<" ">" "<=" ">=" "*" "/" "%")
 
   (define-as translated-infix-token list
-    "eqv_p" "string_append" "=" "or" "and" "string_equal_p" "equal_p" "eq_p" "string=")
+    "eqv_p" "string_append" "=" "or" "and" "string_equal_p" "equal_p" "eq_p" "string=" "modulo")
 
   (define (translate-infix-token a)
     (string-case a (("=" "eqv_p" "eq_p" "string_equal_p" "string=") "==")
@@ -140,18 +140,19 @@
     ;this is applied when ascending the tree, and the arguments have already been processed
     (string-case (first a) ("set_x" (apply es-set-nc! (tail a)))
       ("chain" (apply es-chain (tail a))) ("begin" (string-join (tail a) ";"))
-      ("define" (apply es-define-nc (tail a))) ("declare" (apply es-declare-nc (tail a)))
+      ("define" (apply es-define-nc (tail a)))
       ("not" (string-append "!" (apply string-append (tail a))))
       ("object" (es-object-nc (list->alist (tail a)))) ("ref" (apply ses-ref (tail a)))
-      ("#t" "true") ("#f" "false")
-      (("vector" "list") (es-vector-nc (tail a)))
       (identical-infix-token (parenthesise (string-join (tail a) (first a))))
       (translated-infix-token
         (parenthesise (string-append (string-join (tail a) (translate-infix-token (first a))))))
+      ("#t" "true") ("#f" "false")
+      (("array" "vector" "list") (es-vector-nc (tail a)))
       (("length") (string-append (apply string-append (tail a)) ".length"))
       ("new" (string-append "new " (ses-apply (first (tail a)) (tail (tail a)))))
       ("environment" (ses-environment (tail a)))
       ("return" (if (null? (tail a)) "return" (ses-apply (first a) (tail a))))
+      ("declare" (apply es-declare-nc (tail a)))
       ;throw cannot occur in an if-expression as is, example of this: 1?2:throw(3). but if wrapped in a function it can
       ("throw" (es-apply-nc (es-function-nc (string-append "throw(" (ses-value (tail a)) ")"))))
       (if (list? a) (ses-apply (first a) (tail a)) a)))
