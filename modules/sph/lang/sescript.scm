@@ -130,7 +130,7 @@
                     (l (e)
                       (if (equal? (q else) (first e)) e
                         (pair
-                          (pair (q and)
+                          (pair (q or)
                             (map (l (a) (list (q equal?) (q ___v) a)) (any->list-s (first e))))
                           (tail e))))
                     cond))))

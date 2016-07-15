@@ -24,7 +24,8 @@
       ;replaced in order
       (alist "->" "_to_"
         ".-" (pair "-" "_")
-        ".!$" (pair "!" "_x") "\\?" "_p" ".\\+." (pair "+" "_and_") "./." (pair "/" "_or_"))))
+        ".!$" (pair "!" "_x")
+        ".&$" (pair "&" "_ampersand") "\\?" "_p" ".\\+." (pair "+" "_and_") "./." (pair "/" "_or_"))))
 
   (define (ses-environment a)
     (es-object-nc
