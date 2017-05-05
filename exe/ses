@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (only (sph two) search-env-path-variable) (sph lang sescript))
+(import (sph common) (only (sph one) search-env-path) (sph lang sescript))
 
 (define (process input-port output-port) (sescript-use-strict output-port)
   (sescript->ecmascript (rw-port->list read input-port) output-port
@@ -13,7 +13,7 @@
 (define (each-input-file proc paths) (each (l (path) (call-with-input-file path proc)) paths))
 
 (define uglifyjs
-  (let (uglifyjs-path (search-env-path-variable "uglifyjs"))
+  (let (uglifyjs-path (search-env-path "uglifyjs"))
     (and uglifyjs-path
       (l (action) "symbol:compress/format -> list:process-chain-config"
         (list (q port) (q port)
