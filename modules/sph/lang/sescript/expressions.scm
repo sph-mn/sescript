@@ -12,7 +12,7 @@
     (sph lang ecmascript expressions)
     (only (guile) make-regexp string-join)
     (only (sph alist) alist)
-    (only (sph one) alist->regexp-match-replacements)
+    (only (sph two) alist->regexp-match-replacements)
     (only (sph string) regexp-match-replace))
 
   (define (ses-apply proc args) "symbol/string/any list -> string"
