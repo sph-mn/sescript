@@ -1,19 +1,19 @@
 (library (sph lang sescript)
   (export
     ses-default-load-paths
+    sph-lang-sescript-description
     sescript->ecmascript
-    sescript->string
+    sescript->ecmascript-string
     sescript-use-strict)
   (import
     (guile)
     (ice-9 match)
-    (rnrs base)
     (sph)
     (sph conditional)
     (sph filesystem)
+    (sph io)
     (sph lang ecmascript expressions)
     (sph lang sescript expressions)
-    (sph read-write)
     (sph string)
     (except (srfi srfi-1) map)
     (only (sph alist) list->alist)
@@ -26,7 +26,7 @@
       list-replace-last)
     (only (sph tree) tree-transform))
 
-  ;a scheme-datum to ecmascript compiler
+  (define sph-lang-sescript-description "a scheme data to ecmascript compiler")
 
   (define ses-default-load-paths
     (map ensure-trailing-slash
@@ -59,7 +59,7 @@
             (list (list (q return) a-last)))))
       (list (q return) a)))
 
-  (define-as statement-prefixes ql define while)
+  (define statement-prefixes (q (define while)))
 
   (define (contains-statement? a) "list -> boolean"
     (match a
@@ -136,8 +136,8 @@
                     cond))))
             (unquote expr))))))
 
-  (define (ascend-expr->ecmascript a) "list/any -> string/any"
-    ;this is applied when ascending the tree, and the arguments have already been processed
+  (define (ascend-expr->ecmascript a) "list/any -> string/any
+    called when ascending the tree and the arguments have already been processed"
     (string-case (first a) ("set_x" (apply es-set-nc! (tail a)))
       ("chain" (apply es-chain (tail a))) ("begin" (string-join (tail a) ";"))
       ("define" (apply es-define-nc (tail a)))

@@ -1,69 +1,56 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (only (sph one) search-env-path) (sph lang sescript))
-
-(define (process input-port output-port) (sescript-use-strict output-port)
-  (sescript->ecmascript (rw-port->list read input-port) output-port
-    (pair
-      (ensure-trailing-slash
-        (if-pass (port-filename input-port) (l (a) (path->full-path (dirname a))) (getcwd)))
-      ses-default-load-paths)))
-
-(define (each-input-file proc paths) (each (l (path) (call-with-input-file path proc)) paths))
+(import (sph) (sph filesystem)
+  (sph process) (sph alist)
+  (sph list) (sph cli)
+  (only (srfi srfi-1) drop-right) (sph io read-write)
+  (only (sph one) begin-first search-env-path) (sph lang sescript))
 
 (define uglifyjs
-  (let (uglifyjs-path (search-env-path "uglifyjs"))
+  (let (uglifyjs-path (first-or-false (search-env-path "uglifyjs")))
     (and uglifyjs-path
       (l (action) "symbol:compress/format -> list:process-chain-config"
-        (list (q port) (q port)
-          (case action
-            ( (compress)
-              (l (inp out) (process-replace uglifyjs-path "--compress" "--mangle" "--screw-ie8")))
-            ((format) (l (inp out) (process-replace uglifyjs-path "--beautify")))))))))
+        (case action ((compress) (list uglifyjs-path "--compress" "--mangle"))
+          ((format) (list uglifyjs-path "--beautify")))))))
 
-(define* (ses #:optional post-process-action source-path . source+target-path)
+(define (call-with-ports paths c)
   (let*
-    ( (target-path (if (null? source+target-path) #f (last source+target-path)))
-      (source-path
-        (if source-path
-          (pair source-path (if target-path (drop-right source+target-path 1) (list))) (list))))
-    ;this code can probably be compressed a lot
-    (if target-path
-      (call-with-output-file target-path
-        (l (target-file)
-          (if (and post-process-action uglifyjs)
-            (process-chain-finished-successfully?
-              (if (null? source-path)
-                (process-create-chain-with-paths/pipes (current-input-port) target-file
-                  (list (q port) (q port) process) (uglifyjs post-process-action))
-                (process-create-chain-with-paths/pipes source-path target-file
-                  (list (q any) (q port)
-                    (l (source-files out) (each-input-file (l (e) (process e out)) source-files)))
-                  (uglifyjs post-process-action))))
-            (if (null? source-path) (process (current-input-port) target-file)
-              (each-input-file (l (source-file) (process source-file target-file)) source-path)))))
-      (let (port (current-output-port))
-        (if (and post-process-action uglifyjs)
-          (process-chain-finished-successfully?
-            (if (null? source-path)
-              (process-create-chain-with-paths/pipes (current-input-port) port
-                (list (q port) (q port) process) (uglifyjs post-process-action))
-              (process-create-chain-with-paths/pipes source-path port
-                (list (q any) (q port)
-                  (l (source-files out) (each-input-file (l (e) (process e out)) source-files)))
-                (uglifyjs post-process-action))))
-          (if (null? source-path) (process (current-input-port) port)
-            (each-input-file (l (source-file) (process source-file port)) source-path)))))))
+    ( (destination? (> (length paths) 1))
+      (destination (if destination? (open-file (last paths) "w") (current-output-port)))
+      (source
+        (if (null? paths) (list (current-input-port))
+          (map (l (a) (open-file a "r")) (if destination? (drop-right paths 1) paths)))))
+    (begin-first (c source destination)
+      (if (not (eq? (current-output-port) destination)) (close-port destination))
+      (if (not (eq? (current-input-port) (first source))) (map close-port source)))))
+
+(define (process in out)
+  (rw-port->port read
+    (l (data out) (display (sescript->ecmascript-string data ses-default-load-paths) out)
+      (display ";" out))
+    in out))
+
+(define (ses post-process-action paths)
+  (call-with-ports paths
+    (l (sources destination) (sescript-use-strict destination)
+      (if (and post-process-action uglifyjs)
+        (apply execute-with-pipe (l (port) (each (l (a) (process a port)) sources))
+          OPEN_WRITE (uglifyjs post-process-action))
+        (each (l (a) (process a destination)) sources)))))
 
 (let
   (options
     ( (cli-create #:description
-        "compile sescript to ecmascript reading from files or standard input, and writing to a file or standard output depending on if paths are given as arguments"
+        "compile sescript to ecmascript reading from files or standard input, and writing to a file or standard output depending on if paths are given as arguments.
+        input/output depends on the number of given paths:
+        none: read from standard input and write to standard output
+        one: read from file and write to standard output
+        two: read from the first file and write to the second
+        more: read from all files except the last one and write to the last one"
         #:options
-        (ql (format #:names #\f #:description "format output with uglifyjs")
-          (compress #:names #\c #:description "compress output with uglifyjs") ((paths ...))))))
-  (apply ses
-    (or (and (alist-q-ref options format) (q format))
-      (and (alist-q-ref options compress) (q compress)))
-    (or (alist-q-ref options paths) (list))))
+        (qq
+          ( (format #:names #\f #:description "format output with uglifyjs")
+            (compress #:names #\c #:description "compress output with uglifyjs") ((paths ...)))))))
+  (alist-bind options (format compress paths)
+    (ses (if compress (q compress) (if format (q format) #f)) (or paths (list)))))
