@@ -22,7 +22,7 @@
       any->list-s
       contains?
       improper-list-split-at-last
-      length-eq-one?
+      length-one?
       list-replace-last)
     (only (sph tree) tree-transform))
 
@@ -117,7 +117,7 @@
       ("or" "||") ("equal_p" "===") ("modulo" "%") (throw (q cannot-convert-symbol-to-ecmascript))))
 
   (define-syntax-rule (add-begin-if-multiple a)
-    (if (length-eq-one? a) (first a) (pair (q begin) a)))
+    (if (length-one? a) (first a) (pair (q begin) a)))
 
   (define (ses-case a)
     (match a
