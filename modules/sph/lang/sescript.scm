@@ -1,10 +1,10 @@
 (library (sph lang sescript)
   (export
     ses-default-load-paths
-    sph-lang-sescript-description
     sescript->ecmascript
     sescript->ecmascript-string
-    sescript-use-strict)
+    sescript-use-strict
+    sph-lang-sescript-description)
   (import
     (guile)
     (ice-9 match)
@@ -15,6 +15,7 @@
     (sph lang ecmascript expressions)
     (sph lang sescript expressions)
     (sph string)
+    (sph tree)
     (except (srfi srfi-1) map)
     (only (sph alist) list->alist)
     (only (sph list)
@@ -23,8 +24,7 @@
       contains?
       improper-list-split-at-last
       length-one?
-      list-replace-last)
-    (only (sph tree) tree-transform))
+      list-replace-last))
 
   (define sph-lang-sescript-description "a scheme data to ecmascript compiler")
 
@@ -116,8 +116,7 @@
       ("string_append" "+") ("and" "&&")
       ("or" "||") ("equal_p" "===") ("modulo" "%") (throw (q cannot-convert-symbol-to-ecmascript))))
 
-  (define-syntax-rule (add-begin-if-multiple a)
-    (if (length-one? a) (first a) (pair (q begin) a)))
+  (define-syntax-rule (add-begin-if-multiple a) (if (length-one? a) (first a) (pair (q begin) a)))
 
   (define (ses-case a)
     (match a
@@ -136,8 +135,9 @@
                     cond))))
             (unquote expr))))))
 
-  (define (ascend-expr->ecmascript a) "list/any -> string/any
-    called when ascending the tree and the arguments have already been processed"
+  (define (ascend-expr->ecmascript a)
+    "list/any -> string/any
+     called when ascending the tree and the arguments have already been processed"
     (string-case (first a) ("set_x" (apply es-set-nc! (tail a)))
       ("chain" (apply es-chain (tail a))) ("begin" (string-join (tail a) ";"))
       ("define" (apply es-define-nc (tail a)))
@@ -288,7 +288,7 @@
 
   (define (sescript-use-strict port)
     "port -> string
-    writes a \"use strict\"; command to port to the following
-    code to be interpreted in the so called strict-mode.
-    this can appear multiple times in the output without being an error"
+     writes a \"use strict\"; command to port to the following
+     code to be interpreted in the so called strict-mode.
+     this can appear multiple times in the output without being an error"
     (display "\"use strict\";\n" port)))
