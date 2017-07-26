@@ -69,7 +69,7 @@
 
   (define (ses-if a compile)
     (if (contains-return-statement? a) (compile (pair (q if*) a))
-      (if (contains-statement? a) (compile (qq ((thunk (unquote (pair (q if*) a))))))
+      (if (contains-statement? a) (compile (qq ((nullary (unquote (pair (q if*) a))))))
         (parenthesise
           (apply es-if
             (map
@@ -224,7 +224,7 @@
                 ((test consequent ...) (list (q if) test (add-begin-if-multiple consequent))))
               (tail cond)))
           (q false)))
-      ((case) (ses-case (tail a))) ((thunk) (qq (lambda () (unquote-splicing (tail a)))))
+      ((case) (ses-case (tail a))) ((nullary) (qq (lambda () (unquote-splicing (tail a)))))
       ( (library)
         (match (tail a)
           ( ( (name ...) ((quote export) . exports) ((quote import) . imports) . body)
