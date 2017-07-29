@@ -47,7 +47,7 @@
     (if (list? a)
       (list-replace-last a
         (l (a-last)
-          ;non-expressions can not be used in a return statement. the following catches only a few cases
+          ; non-expressions can not be used in a return statement
           (if (and (list? a-last) (not (null? a-last)))
             (case (first a-last) ((begin) (add-return-to-begin a-last))
               ((define) (add-return-to-define a-last))
@@ -91,7 +91,7 @@
       (begin
         (es-function (compile (pair (q begin) (add-return-statement body compile)))
           (map ses-identifier formals) #:rest (ses-identifier rest-formal))))
-    ((args ...) (ses-function args ... #f)))
+    ((a ...) (ses-function a ... #f)))
 
   (define (ses-ref base . keys) "string string ... -> string"
     (string-append base "[" (string-join keys "][") "]"))
@@ -114,7 +114,7 @@
   (define (translate-infix-token a)
     (string-case a (("=" "eqv_p" "eq_p" "string_equal_p" "string=") "==")
       ("string_append" "+") ("and" "&&")
-      ("or" "||") ("equal_p" "===") ("modulo" "%") (throw (q cannot-convert-symbol-to-ecmascript))))
+      ("or" "||") ("equal_p" "===") ("modulo" "%") (else (raise (q fail-translate-infix-token)))))
 
   (define-syntax-rule (add-begin-if-multiple a) (if (length-one? a) (first a) (pair (q begin) a)))
 
@@ -153,9 +153,9 @@
       ("environment" (ses-environment (tail a)))
       ("return" (if (null? (tail a)) "return" (ses-apply (first a) (tail a))))
       ("declare" (apply es-declare-nc (tail a)))
-      ;throw cannot occur in an if-expression as is, example of this: 1?2:throw(3). but if wrapped in a function it can
+      ; throw cannot occur in an if-expression as is, example of this: 1?2:throw(3). but if wrapped in a function it can
       ("throw" (es-apply-nc (es-function-nc (string-append "throw(" (ses-value (tail a)) ")"))))
-      (if (list? a) (ses-apply (first a) (tail a)) a)))
+      (else (if (list? a) (ses-apply (first a) (tail a)) a))))
 
   (define (descend-expr->sescript a compile load-paths)
     ;this is applied when descending the tree, and the result will be parsed again
