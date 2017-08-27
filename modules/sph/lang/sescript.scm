@@ -34,37 +34,43 @@
 
   (define (add-return-to-define a) "any -> list" (list (list (q begin) a (q (return undefined)))))
 
-  (define (add-return-to-begin a) "list -> list"
-    (list (list-replace-last a (l (a-last) (list (add-return-statement (last a)))))))
-
   (define (add-return-to-set! a) "list -> list"
     (list
       (if (> (length a) 3)
         (list (q begin) (drop-right a 2) (list (q return) (pair (q set!) (take-right a 2))))
         (list (q return) a))))
 
-  (define* (add-return-statement a #:optional compile) "any boolean -> list"
+  (define* (add-return-statement a #:optional compile) "(any:sescript ...) boolean -> list"
     (if (list? a)
       (list-replace-last a
-        (l (a-last)
-          ; non-expressions can not be used in a return statement
+        (l (a-last) "non-expressions can not be used in a return statement"
+          ; some cases might still be missing here
           (if (and (list? a-last) (not (null? a-last)))
-            (case (first a-last) ((begin) (add-return-to-begin a-last))
+            (case (first a-last)
+              ( (begin)
+                ; continue search for last expression in body
+                (list (add-return-statement a-last)))
+              ( (while return)
+                ; do not add any return
+                (list a-last))
               ((define) (add-return-to-define a-last))
-              ( (if*)
+              ( (if* if)
                 (let (a-last-tail (tail a-last))
-                  (pair (first a-last-tail) (map add-return-statement (tail a-last-tail)))))
-              ((return) (list a-last)) ((set!) (add-return-to-set! a-last))
-              ((while) (list a-last)) (else (list (list (q return) a-last))))
+                  #;(debug-log (tail a-last-tail) (q --result--)
+                    (map (compose add-return-statement list) (tail a-last-tail)))
+                  (list
+                    (pairs (q if*) (first a-last-tail)
+                      (apply append (map (compose add-return-statement list) (tail a-last-tail)))))))
+              ((set!) (add-return-to-set! a-last)) (else (list (list (q return) a-last))))
             (list (list (q return) a-last)))))
       (list (q return) a)))
 
-  (define statement-prefixes (q (define while)))
+  (define statement-prefixes (q (define while set!)))
 
   (define (contains-statement? a) "list -> boolean"
     (match a
       ( ( (? symbol? prefix) rest ...)
-        (or (contains? statement-prefixes prefix) (contains-statement? rest)))
+        (or (containsq? statement-prefixes prefix) (contains-statement? rest)))
       (_ (and (list? a) (any contains-statement? a)))))
 
   (define (ses-if a compile)
@@ -88,9 +94,8 @@
 
   (define-syntax-rules ses-function
     ( (compile body formals rest-formal)
-      (begin
-        (es-function (compile (pair (q begin) (add-return-statement body compile)))
-          (map ses-identifier formals) #:rest (ses-identifier rest-formal))))
+      (es-function (compile (pair (q begin) (add-return-statement body compile)))
+        (map ses-identifier formals) #:rest (ses-identifier rest-formal)))
     ((a ...) (ses-function a ... #f)))
 
   (define (ses-ref base . keys) "string string ... -> string"
@@ -158,7 +163,7 @@
       (else (if (list? a) (ses-apply (first a) (tail a)) a))))
 
   (define (descend-expr->sescript a compile load-paths)
-    ;this is applied when descending the tree, and the result will be parsed again
+    "this is applied when descending the tree, and the result will be parsed again"
     (case (first a) ((first) (qq (ref (unquote-splicing (tail a)) 0)))
       ((pair) (qq (chain unshift (unquote (list-ref a 2)) (unquote (list-ref a 1)))))
       ((tail) (qq (chain slice (unquote (list-ref a 1)) 1)))
@@ -279,7 +284,7 @@
 
   (define* (sescript->ecmascript exprs port #:optional (load-paths ses-default-load-paths))
     "(expression ...) port ->"
-    (each (l (e) (display (sescript->ecmascript-string e load-paths) port) (display ";" port))
+    (each (l (a) (display (sescript->ecmascript-string a load-paths) port) (display ";" port))
       exprs))
 
   (define* (sescript->ecmascript-string expr #:optional (load-paths ses-default-load-paths))
