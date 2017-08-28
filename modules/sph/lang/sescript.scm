@@ -22,11 +22,13 @@
       any->list
       any->list-s
       contains?
+      containsq?
       improper-list-split-at-last
       length-one?
       list-replace-last))
 
-  (define sph-lang-sescript-description "a scheme data to ecmascript compiler")
+  (define sph-lang-sescript-description
+    "s-expression language that compiles to javascript/ecmascript")
 
   (define ses-default-load-paths
     (map ensure-trailing-slash
