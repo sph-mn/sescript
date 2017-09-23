@@ -42,7 +42,8 @@
 (let
   (options
     ( (cli-create #:description
-        "compile sescript to ecmascript reading from files or standard input, and writing to a file or standard output depending on if paths are given as arguments.
+        "compile sescript to ecmascript. read from files or standard input,
+        and write to a file or standard output depending on if paths are given as arguments.
         input/output depends on the number of given paths:
         none: read from standard input and write to standard output
         one: read from file and write to standard output
