@@ -4,19 +4,19 @@
   (set! jquery.fn.input-observe
     (l (config)
       (let*
-        ( (ele this)
-          (prev-value (chain val ele))
+        ( (a this)
+          (prev-value (chain val a))
           (js-interval #f)
           (update-func
             (lambda ()
-              (let (value (chain val ele))
+              (let (value (chain val a))
                 (if (not (eqv? value prev-value))
                   (set! prev-value value)
                   (config.func value)))))
           (focus-func
             (lambda ()
               (set! js-interval (setInterval update_func config.interval)))))
-        (ele.blur
+        (a.blur
           (l ()
             (clearInterval js-interval)
-            (ele.off "focus" focus-func)))))))
+            (a.off "focus" focus-func)))))))
