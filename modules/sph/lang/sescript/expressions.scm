@@ -10,10 +10,11 @@
     (rnrs base)
     (sph)
     (sph lang ecmascript expressions)
+    (sph lang scheme)
     (only (guile) make-regexp string-join)
     (only (sph alist) alist)
-    (only (sph two) alist->regexp-match-replacements)
-    (only (sph string) regexp-match-replace))
+    (only (sph string) regexp-match-replace)
+    (only (sph two) alist->regexp-match-replacements))
 
   (define (ses-apply proc args) "symbol/string/any list -> string"
     (es-apply-nc (ses-identifier proc) (string-join (map ses-identifier args) ",")))
