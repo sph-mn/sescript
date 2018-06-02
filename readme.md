@@ -95,14 +95,15 @@ how to add your own syntax
 
 examples
 ```
-(sescript->ecmascript-string (quote ((define a 1) (set a 2))))
+(sescript->ecmascript-string (quote (begin (define a 1) (set a 2))))
 (sescript->ecmascript (quote ((define a 1) (set a 2))) (current-output-port))
 
 (define scheme-value 8)
 
 (define code
   (quasiquote
-    ( (define a 1)
+    (begin
+      (define a 1)
       (set a (unquote scheme-value)))))
 
 (sescript->ecmascript-string code)
