@@ -1,6 +1,7 @@
 (library (sph lang sescript expressions)
   (export
     ses-apply
+    ses-begin
     ses-case
     ses-chain
     ses-cond
@@ -30,14 +31,17 @@
     (sph lang scheme)
     (sph list)
     (only (guile)
+      compose
       make-regexp
       raise
+      string-suffix?
       string-join)
     (only (sph alist) alist list->alist)
     (only (sph filesystem) search-load-path)
     (only (sph string) parenthesise regexp-match-replace)
     (only (sph tree) tree-contains?)
-    (only (sph two) alist->regexp-match-replacements))
+    (only (sph two) alist->regexp-match-replacements)
+    (only (srfi srfi-1) drop-right take-right))
 
   (define identifier-replacements
     (alist->regexp-match-replacements
@@ -80,6 +84,14 @@
 
   (define (ses-apply a compile) (es-apply (compile (first a)) (map compile (tail a))))
   (define (ses-return a compile) (if (null? a) "return" (ses-apply (pair (q return) a) compile)))
+
+  (define (ses-begin a compile)
+    (apply string-append
+      (map
+        (l (a)
+          (let (a (compile a))
+            (if (or (string-suffix? "*/\n" a) (string-suffix? ";" a)) a (string-append a ";"))))
+        a)))
 
   (define (ses-case a compile)
     (match a

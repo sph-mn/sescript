@@ -41,7 +41,7 @@
 
   (define-as ses-descend-ecmascript ht-create-symbol
     array (l (a compile) (es-array (map compile a)))
-    begin (l (a compile) (string-join (map compile a) ";"))
+    begin ses-begin
     case ses-case
     chain ses-chain
     cond ses-cond
@@ -57,9 +57,10 @@
     new (l (a compile) (string-append "new " (ses-apply a compile)))
     not (l (a compile) (string-append "!" (compile (first a))))
     object ses-object
-    return ses-return  ses-insert (l (a compile) (apply string-append a))
+    return ses-return
+    ses-insert (l (a compile) (apply string-append a))
     ses-comment (l (a compile) (string-append "\n/* " (string-join a "\n  ") " */\n"))
-    set ses-set  while ses-while)
+    set ses-set while ses-while)
 
   (for-each
     (l (prefixes f)
@@ -90,12 +91,12 @@
               (let (b (to-ecmascript prefix a compile)) (if b (list b #f) (list #f #t)))))))))
 
   (define* (sescript->ecmascript-string expr #:optional (load-paths ses-default-load-paths))
-    "expression -> string" (tree-transform expr (descend-f load-paths) identity ses-value))
+    "expression -> string"
+    (tree-transform (list (q begin) expr) (descend-f load-paths) identity ses-value))
 
   (define* (sescript->ecmascript expressions port #:optional (load-paths ses-default-load-paths))
     "(expression ...) port ->"
-    (for-each (l (a) (display (sescript->ecmascript-string a load-paths) port) (display ";" port))
-      expressions))
+    (for-each (l (a) (display (sescript->ecmascript-string a load-paths) port)) expressions))
 
   (define (sescript-use-strict port)
     "port -> string

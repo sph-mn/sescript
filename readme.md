@@ -28,8 +28,10 @@ function test(x, y){return(true)};
   f 9)
 ```
 
-myobject.a.b or (get myobject "a" "b")
-(get myarray 0 1) -> myarray[0][1]
+## accessors
+* myobject.a.b
+* (get myobject "a" "b")
+* (get myarray 0 1)
 
 # extensions
 * adds return statement to the last expression in a function or returns undefined. lambda just feels wrong without this behaviour
