@@ -49,6 +49,35 @@
 
   (define-syntax-rule (add-begin a) (if (length-one? a) (first a) (pair (q begin) a)))
   (define (contains-set? a) "list -> boolean" (and (list? a) (tree-contains? a (q set))))
+
+  (define (add-return-statement a)
+    "(any:sescript ...) -> (any:sescript ...)
+     add returns to return the last expression or undefined at all exit points"
+    (list-replace-last a
+      (l (a-last)
+        "only expressions that themselves return a value can be used in a return statement"
+        ; some cases might still be missing here
+        (if (and (list? a-last) (not (null? a-last)))
+          (case (first a-last)
+            ( (begin)
+              ; continue search for last expression in body
+              (list (add-return-statement a-last)))
+            ( (while for return)
+              ; do not add any return
+              (list a-last))
+            ((define) (list (list (q begin) a-last (q (return undefined)))))
+            ( (if* if)
+              (let (a-last-tail (tail a-last))
+                (list
+                  (pairs (first a-last) (first a-last-tail)
+                    (apply append (map (compose add-return-statement list) (tail a-last-tail)))))))
+            ( (set)
+              (list
+                (list (q begin) (drop-right a-last 2)
+                  (list (q return) (pair (q set) (take-right a-last 2))))))
+            (else (list (list (q return) a-last))))
+          (list (list (q return) a-last))))))
+
   (define (ses-apply a compile) (es-apply (compile (first a)) (map compile (tail a))))
   (define (ses-return a compile) (if (null? a) "return" (ses-apply (pair (q return) a) compile)))
 
@@ -116,7 +145,8 @@
           (search-load-path (string-append (first a) ".sjs") load-paths)))))
 
   (define (ses-lambda a compile)
-    (es-function (compile (add-begin (tail a))) (map ses-identifier (first a))))
+    (es-function (compile (add-begin (add-return-statement (tail a))))
+      (map ses-identifier (first a))))
 
   (define (ses-let a compile) "-> sc"
     (match a

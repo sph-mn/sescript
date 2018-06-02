@@ -57,7 +57,9 @@
     new (l (a compile) (string-append "new " (ses-apply a compile)))
     not (l (a compile) (string-append "!" (compile (first a))))
     object ses-object
-    return ses-return ses-insert (l (a compile) (apply string-append a)) set ses-set while ses-while)
+    return ses-return  ses-insert (l (a compile) (apply string-append a))
+    ses-comment (l (a compile) (string-append "\n/* " (string-join a "\n  ") " */\n"))
+    set ses-set  while ses-while)
 
   (for-each
     (l (prefixes f)

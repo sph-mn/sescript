@@ -4,14 +4,14 @@
 (import (sph) (sph filesystem)
   (sph process) (sph alist)
   (sph list) (sph cli)
-  (only (srfi srfi-1) drop-right) (sph io read-write)
-  (sph one) (sph lang sescript))
+  (only (srfi srfi-1) drop-right) (sph io read-write) (sph one) (sph lang sescript))
 
 (define uglifyjs
   (let (uglifyjs-path (search-env-path-one "uglifyjs"))
     (and uglifyjs-path
       (l (action) "symbol:compress/format -> list:process-chain-config"
-        (case action ((compress) (list uglifyjs-path "--compress" "--mangle"))
+        (case action
+          ((compress) (list uglifyjs-path "--compress" "--mangle"))
           ((format) (list uglifyjs-path "--beautify")))))))
 
 (define (call-with-ports paths c)
