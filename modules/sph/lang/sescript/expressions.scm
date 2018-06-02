@@ -6,6 +6,7 @@
     ses-cond
     ses-define
     ses-environment
+    ses-for
     ses-get
     ses-identical-infix
     ses-identifier
@@ -21,17 +22,14 @@
     ses-set
     ses-translated-infix
     ses-value
-    ses-while
-    ses-wrapped-throw)
+    ses-while)
   (import
     (ice-9 match)
     (sph)
     (sph lang ecmascript expressions)
     (sph lang scheme)
     (sph list)
-    (except (srfi srfi-1) map)
     (only (guile)
-      compose
       make-regexp
       raise
       string-join)
@@ -50,53 +48,7 @@
         "->" "_to_" ".&$" (pair "&" "_ampersand") "\\?" "_p" "./." (pair "/" "_slash_"))))
 
   (define-syntax-rule (add-begin a) (if (length-one? a) (first a) (pair (q begin) a)))
-  (define (add-return-to-define a) "any -> list" (list (list (q begin) a (q (return undefined)))))
   (define (contains-set? a) "list -> boolean" (and (list? a) (tree-contains? a (q set))))
-  (define statement-prefixes (q (define while set!)))
-
-  (define (add-return-to-set! a) "list -> list"
-    (list
-      (if (> (length a) 3)
-        (list (q begin) (drop-right a 2) (list (q return) (pair (q set!) (take-right a 2))))
-        (list (q return) a))))
-
-  (define* (add-return-statement a #:optional compile) "(any:sescript ...) boolean -> list"
-    (if (list? a)
-      (list-replace-last a
-        (l (a-last) "non-expressions can not be used in a return statement"
-          ; some cases might still be missing here
-          (if (and (list? a-last) (not (null? a-last)))
-            (case (first a-last)
-              ( (begin)
-                ; continue search for last expression in body
-                (list (add-return-statement a-last)))
-              ( (while return)
-                ; do not add any return
-                (list a-last))
-              ((define) (add-return-to-define a-last))
-              ( (if* if)
-                (let (a-last-tail (tail a-last))
-                  (list
-                    (pairs (q if*) (first a-last-tail)
-                      (apply append (map (compose add-return-statement list) (tail a-last-tail)))))))
-              ((set!) (add-return-to-set! a-last))
-              (else (list (list (q return) a-last))))
-            (list (list (q return) a-last)))))
-      (list (q return) a)))
-
-  (define (contains-return-statement? a) "list -> boolean"
-    (any
-      (l (a)
-        (match a (((quote return) _ ...) #t)
-          (((quote begin) rest ...) (contains-return-statement? rest)) (_ #f)))
-      a))
-
-  (define (contains-statement? a) "list -> boolean"
-    (match a
-      ( ( (? symbol? prefix) rest ...)
-        (or (containsq? statement-prefixes prefix) (contains-statement? rest)))
-      (_ (and (list? a) (any contains-statement? a)))))
-
   (define (ses-apply a compile) (es-apply (compile (first a)) (map compile (tail a))))
   (define (ses-return a compile) (if (null? a) "return" (ses-apply (pair (q return) a) compile)))
 
@@ -127,8 +79,7 @@
   (define (ses-define a compile)
     (match a
       ( ( (name formals ...) body ...)
-        (es-function (compile (add-return-statement (add-begin body))) (map ses-identifier formals)
-          (ses-identifier name)))
+        (es-function (compile (add-begin body)) (map ses-identifier formals) (ses-identifier name)))
       ( (name value name/value ...)
         (es-define (map-slice 2 (l (a b) (pair (ses-identifier a) (compile b))) a)))))
 
@@ -165,8 +116,7 @@
           (search-load-path (string-append (first a) ".sjs") load-paths)))))
 
   (define (ses-lambda a compile)
-    (es-function (compile (add-return-statement (add-begin (tail a))))
-      (map ses-identifier (first a))))
+    (es-function (compile (add-begin (tail a))) (map ses-identifier (first a))))
 
   (define (ses-let a compile) "-> sc"
     (match a
@@ -174,11 +124,6 @@
         (qq ((lambda (unquote formals) (unquote-splicing body)) (unquote-splicing vals))))
       ( ( (formal val) body ...)
         (qq ((lambda ((unquote formal)) (unquote-splicing body)) (unquote val))))
-      ( (name ((formals vals) ...) body ...)
-        (qq
-          ( (lambda ((unquote name))
-              (set! (unquote name) (lambda (unquote formals) (unquote-splicing body)))
-              ((unquote name) (unquote-splicing vals))))))
       (_ (raise (q ses-syntax-error-for-let)))))
 
   (define (ses-let* a compile) "-> sc"
@@ -218,10 +163,6 @@
           ((bit-xor) "^")
           ((modulo) "%")
           ((or) "||")))))
-
-  (define (ses-wrapped-throw a compile)
-    "throw cannot occur in an if-expression as is, example of this: 1?2:throw(3). but if wrapped in a function it can"
-    (es-apply (es-function (string-append "throw" (parenthesise (ses-value a))))))
 
   (define (ses-value a) "any -> string" (if (symbol? a) (ses-identifier a) (es-value a)))
 

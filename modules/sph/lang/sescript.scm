@@ -8,28 +8,25 @@
     sescript-use-strict
     sph-lang-sescript-description)
   (import
-    (guile)
-    (ice-9 match)
     (sph)
-    (sph conditional)
-    (sph filesystem)
     (sph hashtable)
-    (sph io)
     (sph lang ecmascript expressions)
     (sph lang sescript expressions)
     (sph list)
-    (sph string)
-    (sph tree)
-    (except (srfi srfi-1) map)
-    (only (sph alist) list->alist))
+    (only (guile)
+      display
+      getenv
+      string-join
+      string-split)
+    (only (sph filesystem) ensure-trailing-slash)
+    (only (sph tree) tree-transform))
 
   (define sph-lang-sescript-description
     "compiles s-expressions to javascript/ecmascript.
      mostly avoids introducing new features to be mostly a mapping")
 
   (define ses-default-load-paths
-    (map ensure-trailing-slash
-      (if-pass (getenv "SES_LOAD_PATH") (l (a) (string-split a #\:)) (list))))
+    (map ensure-trailing-slash (let (a (getenv "SES_LOAD_PATH")) (if a (string-split a #\:) null))))
 
   (define-as ses-descend-sescript ht-create-symbol
     environment ses-environment
@@ -50,6 +47,7 @@
     cond ses-cond
     declare (l (a compile) (es-declare (map ses-identifier a)))
     define ses-define
+    for ses-for
     get ses-get
     if ses-if
     if* ses-if*
@@ -59,9 +57,7 @@
     new (l (a compile) (string-append "new " (ses-apply a compile)))
     not (l (a compile) (string-append "!" (compile (first a))))
     object ses-object
-    return ses-return
-    ses-insert (l (a compile) (apply string-append a))
-    set! ses-set throw ses-wrapped-throw while ses-while)
+    return ses-return ses-insert (l (a compile) (apply string-append a)) set ses-set while ses-while)
 
   (for-each
     (l (prefixes f)

@@ -28,10 +28,7 @@
     (sph)
     (sph list)
     (only (guile) raise string-join)
-    (only (sph alist)
-      alist
-      alist-map
-      list-alist?)
+    (only (sph alist) alist alist-map)
     (only (sph string)
       any->string
       parenthesise
@@ -134,8 +131,6 @@
       ((number? a) (number->string a))
       ((vector? a) (es-array (vector->list a)))
       ((boolean? a) (if a "true" "false"))
-      ((list? a) (if (list-alist? a) (es-object a) (es-array a)))
-      ((pair? a) (es-array (list (first a) (tail a))))
       ((char? a) (string-enclose (any->string a) "\""))
       (else (raise (q es-error-cannot-convert-value)))))
 
