@@ -29,13 +29,15 @@ function test(x, y){return(true)};
 ```
 
 ## accessors
-* myobject.a.b
-* (get myobject "a" "b")
-* (get myarray 0 1)
+```
+myobject.a.b
+(get myobject "a" "b")
+(get myarray 0 1)
+```
 
 # extensions
-* adds return statement to the last expression in a function or returns undefined. lambda just feels wrong without this behaviour
-* cond, case, let, let*
+* adds return statement to the last expression in a function. lambda just feels wrong without this behaviour
+* let, let*
 
 # command-line application
 ```
