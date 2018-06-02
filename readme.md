@@ -72,24 +72,6 @@ alternatively
 
 try to run ``ses --help`` to see if it works
 
-# extension
-how to add your own syntax
-```
-(import (sph lang sescript) (rnrs hashtables))
-
-(hashtable-set! ses-descend-sescript (quote myprefix)
-  (lambda (a compile)
-    "(any:sescript-argument ...) procedure:recurse -> any:sescript
-    create sescript that will be parsed again"
-    (list (quote if) a #t #f)))
-
-(hashtable-set! ses-descend-ecmascript (quote myprefix)
-  (lambda (a compile)
-    "(any:sescript-argument ...) procedure:recurse -> string:ecmascript
-     create ecmascript strings directly"
-     (string-join (map compile a) "\n")))
-```
-
 # usage from scheme
 ```
 (import (sph lang sescript))
@@ -110,6 +92,25 @@ examples
 
 (sescript->ecmascript-string code)
 ```
+
+# extension
+how to add your own syntax: this is currently only possible when compiling from scheme and not via the cli application. create a scheme file with new bindings, example below, and then use sescript->ecmascript-string or similar as usual
+```
+(import (sph lang sescript) (rnrs hashtables))
+
+(hashtable-set! ses-descend-sescript (quote myprefix)
+  (lambda (a compile)
+    "(any:sescript-argument ...) procedure:recurse -> any:sescript
+    create sescript that will be parsed again"
+    (list (quote if) a #t #f)))
+
+(hashtable-set! ses-descend-ecmascript (quote myprefix)
+  (lambda (a compile)
+    "(any:sescript-argument ...) procedure:recurse -> string:ecmascript
+     create ecmascript strings directly"
+     (string-join (map compile a) "\n")))
+```
+
 
 # other
 * filename extension .sjs or .ses
@@ -298,6 +299,7 @@ a=1;b=2;c=3;
 
 # possible enhancements and ideas
 * support docstrings
+* add a command-line option to load custom syntax extensions from a file
 * translate scheme comments. function and macro docstrings are translated as expected but scheme comments dont appear in the output unless ``(ses-comment "comment string")`` is used
 * syntax checks and error messages
 * an extension that supports hygienic macros and a scheme like module system. implement do-while as an example
