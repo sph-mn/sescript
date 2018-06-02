@@ -6,7 +6,6 @@
     ses-chain
     ses-cond
     ses-define
-    ses-environment
     ses-for
     ses-get
     ses-identical-infix
@@ -19,6 +18,7 @@
     ses-let*
     ses-numeric-boolean
     ses-object
+    ses-object*
     ses-return
     ses-set
     ses-translated-infix
@@ -47,9 +47,9 @@
     (alist->regexp-match-replacements
       ; format: (regexp search-string . replacement)
       ; replaced in order
-      (alist ".-" (pair "-" "_")
-        ".!$" (pair "!" "_x")
-        "->" "_to_" ".&$" (pair "&" "_ampersand") "\\?" "_p" "./." (pair "/" "_slash_"))))
+      (alist ".!$" (pair "!" "_x")
+        "->" "_to_"
+        ".-" (pair "-" "_") ".&$" (pair "&" "_ampersand") "\\?" "_p" "./." (pair "/" "_slash_"))))
 
   (define-syntax-rule (add-begin a) (if (length-one? a) (first a) (pair (q begin) a)))
   (define (contains-set? a) "list -> boolean" (and (list? a) (tree-contains? a (q set))))
@@ -66,7 +66,9 @@
             ( (begin)
               ; continue search for last expression in body
               (list (add-return-statement a-last)))
-            ( (while for return)
+            ( (case while
+                for
+                return)
               ; do not add any return
               (list a-last))
             ((define) (list (list (q begin) a-last (q (return undefined)))))
@@ -97,7 +99,11 @@
     (match a
       ( (value (test consequent ...) ...)
         (es-switch (compile value)
-          (map (l (a b) (pair (if (eq? (q else) a) a (compile a)) (map compile b))) test consequent)))))
+          (map
+            (l (a b)
+              (pair (if (eq? (q else) a) a (if (list? a) (map compile a) (compile a)))
+                (map compile b)))
+            test consequent)))))
 
   (define (ses-chain a compile) (match (map compile a) ((name base a ...) (es-chain name base a))))
 
@@ -126,7 +132,7 @@
 
   (define (ses-set a compile) (es-set (list->alist (map compile a))))
 
-  (define (ses-environment a compile) "list -> string"
+  (define (ses-object* a compile) "list -> string"
     (pair (q object) (fold-right (l (a result) (pairs a a result)) null a)))
 
   (define (ses-for a compile)

@@ -111,8 +111,10 @@
               (let (test (first a))
                 (if (eq? (q else) test)
                   (string-append "default:" (string-join (append (tail a) (list "break")) ";"))
-                  (string-append "case " (first a)
-                    ":" (string-join (append (tail a) (list "break")) ";")))))
+                  (string-append
+                    (apply string-append
+                      (map (l (a) (string-append "case " a ":")) (any->list test)))
+                    (string-join (append (tail a) (list "break")) ";")))))
             cases)
           ";"))))
 

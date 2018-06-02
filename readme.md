@@ -1,7 +1,7 @@
 * a simpler ecmascript/javascript syntax. ecmascript written as scheme-like s-expressions
 * the output, after formatting, is supposed to be as if originally written in ecmascript
 * supports all ecmascript 5
-* command line compiler and scheme library
+* command-line compiler and scheme library
 * possibly also useful as an intermediate language for applications that want to compile to ecmascript
 * status: should work, been around for a while, easy to maintain and extend
 * license: gpl3+. does not apply to generated code. generated code has your license

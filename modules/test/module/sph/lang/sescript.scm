@@ -7,6 +7,11 @@
 
   (test-execute-procedures-lambda
     (sescript->ecmascript
+      (begin a->b a-b a! a& a?)
+      "a_to_b;a_b;a_x;a_ampersand;a_p;"
+      (case a
+        ((b c d) #t))
+      "switch(a){case b:case c:case d:true;break};"
       (begin 1 (begin 2 3)) "1;2;3;"
       (begin 1 a #t #\a "1" )
       "1;a;true;\"a\";\"1\";"
@@ -33,7 +38,7 @@
       (define a 1) "var a=1;"
       (define a 1 b 2) "var a=1,b=2;"
       (define a (lambda (a b) 1 2 3)) "var a=(function(a,b){1;2;return(3);});"
-      (environment a b c) "{a:a,b:b,c:c};"
+      (object* a b c) "{a:a,b:b,c:c};"
       (for ((set index 0) (< index len) (set index (+ 1 index))) #t)
       "for(index=0;(index<len);index=(1+index)){true};"
       (for (((set a 0) (set b 1)) (< index len) ((set a (+ 1 a)) (set b (+ 2 b)))) #t)
@@ -65,4 +70,5 @@
       (set a 1) "a=1;"
       (set a 1 b 2 c 3) "a=1;b=2;c=3;"
       (array #\a) "[\"a\"];" (array "\"") "[\"\\\"\"];" (array #t) "[true];"
+      (nullary #t) "(function(){return(true)});"
       )))

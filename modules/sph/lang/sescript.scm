@@ -29,7 +29,7 @@
     (map ensure-trailing-slash (let (a (getenv "SES_LOAD_PATH")) (if a (string-split a #\:) null))))
 
   (define-as ses-descend-sescript ht-create-symbol
-    environment ses-environment
+    object* ses-object*
     let ses-let
     let* ses-let* nullary (l (a compile) (qq (lambda () (unquote-splicing a)))) ses-include)
 
