@@ -47,7 +47,7 @@
   (define (parenthesise-ensure a) (if (parenthesised? a) a (parenthesise a)))
 
   (define* (es-apply name #:optional a) "string (string ...) -> string"
-    (string-append name (parenthesise (if a (es-comma-join a) ""))))
+    (string-append name (if a (parenthesise-ensure (es-comma-join a)) "()")))
 
   (define (es-chain name base a) "string string (string ...) -> string"
     (es-apply (string-append base "." name) a))

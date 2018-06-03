@@ -7,6 +7,8 @@
 
   (test-execute-procedures-lambda
     (sescript->ecmascript
+      (lambda () (if* a b c))
+      "(function(){return(a?b:c)});"
       (begin a->b a-b a! a& a?)
       "a_to_b;a_b;a_x;a_ampersand;a_p;"
       (case a

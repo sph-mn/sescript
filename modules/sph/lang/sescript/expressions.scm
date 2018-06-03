@@ -56,28 +56,32 @@
 
   (define (add-return-statement a)
     "(any:sescript ...) -> (any:sescript ...)
-     add returns to return the last expression or undefined at all exit points"
+     add return statements to return the last expression or undefined at all exit points.
+     it has to differentiate between expressions and other statements that cant be returned"
     (list-replace-last a
       (l (a-last)
-        "only expressions that themselves return a value can be used in a return statement"
-        ; some cases might still be missing here
+        "any -> (any:replacements ...)
+        only expressions that themselves return a value can be used in a return statement"
         (if (and (list? a-last) (not (null? a-last)))
+          ; check prefix of last expression.
+          ; some cases might still be missing here
           (case (first a-last)
             ( (begin)
               ; continue search for last expression in body
               (list (add-return-statement a-last)))
-            ( (case while
+            ( (while
                 for
                 return)
-              ; do not add any return
+              ; do not add any return in these statements
               (list a-last))
             ((define) (list (list (q begin) a-last (q (return undefined)))))
-            ( (if* if)
+            ( (if)
               (let (a-last-tail (tail a-last))
                 (list
                   (pairs (first a-last) (first a-last-tail)
                     (apply append (map (compose add-return-statement list) (tail a-last-tail)))))))
             ( (set)
+              ; at return to the set of the last variable
               (list
                 (list (q begin) (drop-right a-last 2)
                   (list (q return) (pair (q set) (take-right a-last 2))))))
