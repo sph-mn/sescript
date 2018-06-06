@@ -124,9 +124,33 @@ how to add your own syntax: this is currently only possible when compiling from 
 ses expression and the ecmascript result. taken from the automated tests
 
 ```
+(array #\a)
+->
+["a"];
+
+(array "\"")
+->
+["\""];
+
+(array #t)
+->
+[true];
+
+(begin a->b a-b a! a& a?)
+->
+a_to_b;a_b;a_x;a_ampersand;a_p;
+
+(case a ((b c d) #t))
+->
+switch(a){case b:case c:case d:true;break};
+
 (begin 1 a #t #\a "1")
 ->
 1;a;true;"a";"1";
+
+(begin 1 (begin 2 3))
+->
+1;2;3;
 
 (case (+ 1 2) (2 #t #f) (3 #t) (else 4 5))
 ->
@@ -144,21 +168,17 @@ switch(1+2){case 2:true;false;break;case 3:true;break;default:4;5;break};
 ->
 [1,2,3];
 
-(begin 1 (begin 2 3))
-->
-1;2;3;
-
 (chain c (chain a b) 1 2 "d")
 ->
 b.a().c(1,2,"d");
 
-(cond ((= a 1) (= b 2)) ((= c 3) #t))
+(cond (a b) ((= c 3) #f #t) (else #t #f))
 ->
-if(a===1){(b===2)}else if(c===3){true};
+if(a){b}else if(c===3){false;true;}else{true;false;};
 
-(cond ((= a 1) (= b 2)) ((= c 3) #f #t) (else #t #f))
+(cond (a b))
 ->
-if(a===1){(b===2)}else if(c===3){false;true}else{true;false};
+if(a){b};
 
 (declare a)
 ->
@@ -178,11 +198,11 @@ var a=1,b=2;
 
 (define a (lambda (a b) 1 2 3))
 ->
-var a=(function(a,b){1;2;return(3)});
+var a=(function(a,b){1;2;return(3);});
 
-(environment a b c)
+(define (a b c-d) 1 2 3)
 ->
-{a:a,b:b,c:c};
+function a(b,c_d){1;2;return(3);};
 
 (for ((set index 0) (< index len) (set index (+ 1 index))) #t)
 ->
@@ -228,6 +248,10 @@ a[1][2];
 ->
 (function(a){return(1)});
 
+(lambda () (if* a b c))
+->
+(function(){return(a?b:c)});
+
 ((lambda (a) 1))
 ->
 (function(a){return(1)})();
@@ -242,11 +266,15 @@ a[1][2];
 
 (let* ((a 1) (b 2) (c 3)) 4)
 ->
-(function(a){var b=2;var c=3;return(4)})(1);
+(function(a){var b=2;var c=3;return(4);})(1);
 
 (make-regexp "[^a-b0-9]" "g")
 ->
 /[^a-b0-9]/g;
+
+(new obj)
+->
+new obj();
 
 (new obj 3 5)
 ->
@@ -256,13 +284,21 @@ new obj(3,5);
 ->
 !1;
 
-(object a 2 b-c 3 "d" 4)
+(nullary #t)
 ->
-{a:2,b_c:3,"d":4};
+(function(){return(true)});
 
 (object)
 ->
 {};
+
+(object a 2 b-c 3 "d" 4)
+->
+{a:2,b_c:3,"d":4};
+
+(object* a b c)
+->
+{a:a,b:b,c:c};
 
 (return)
 ->
@@ -271,6 +307,11 @@ return;
 (return 1 2)
 ->
 return(1,2);
+
+(ses-comment "test" "comment")
+->
+/* test
+  comment */
 
 (ses-insert "var a = 3")
 ->
@@ -283,18 +324,6 @@ a=1;
 (set a 1 b 2 c 3)
 ->
 a=1;b=2;c=3;
-
-(array #\a)
-->
-["a"];
-
-(array "\"")
-->
-["\""];
-
-(array #t)
-->
-[true];
 ```
 
 # possible enhancements and ideas
