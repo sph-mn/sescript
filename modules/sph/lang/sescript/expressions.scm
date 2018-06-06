@@ -69,9 +69,7 @@
             ( (begin)
               ; continue search for last expression in body
               (list (add-return-statement a-last)))
-            ( (while
-                for
-                return)
+            ( (while for return)
               ; do not add any return in these statements
               (list a-last))
             ((define) (list (list (q begin) a-last (q (return undefined)))))
@@ -130,7 +128,8 @@
   (define (ses-define a compile)
     (match a
       ( ( (name formals ...) body ...)
-        (es-function (compile (add-begin body)) (map ses-identifier formals) (ses-identifier name)))
+        (es-function (compile (add-begin (add-return-statement body))) (map ses-identifier formals)
+          (ses-identifier name)))
       ( (name value name/value ...)
         (es-define (map-slice 2 (l (a b) (pair (ses-identifier a) (compile b))) a)))))
 
