@@ -135,7 +135,9 @@
 
   (define (ses-set a compile) (es-set (list->alist (map compile a))))
 
-  (define (ses-object* a compile) "list -> string"
+  (define (ses-object* a compile) "list -> sxml
+    special form of (object) where variable identifiers are the keys.
+    (object* a b c) = (object a a b b c c)"
     (pair (q object) (fold-right (l (a result) (pairs a a result)) null a)))
 
   (define (ses-for a compile)
@@ -188,7 +190,8 @@
             (unquote (first vals)))))
       (_ (raise (q ses-syntax-error-let*)))))
 
-  (define (ses-numeric-boolean prefix a compile) "for infix operators that return booleans"
+  (define (ses-numeric-boolean prefix a compile) "for infix operators that return booleans.
+    (= a b c) does not mean a===b===c in javascript but (a===b&&b===c)"
     (let (operator (if (eq? (q =) prefix) "===" (symbol->string prefix)))
       (string-join
         (map-segments 2 (l (a b) (parenthesise (string-append a operator b)))
