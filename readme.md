@@ -109,15 +109,16 @@ how to add your own syntax: this is currently only possible when compiling from 
     "(any:sescript-argument ...) procedure:recurse -> string:ecmascript
      create ecmascript strings directly"
      (string-join (map compile a) "\n")))
-```
 
+(sescript->ecmascript-string code)
+```
 
 # other
 * filename extension .sjs or .ses
 * --format and --compress option on the command-line if uglifyjs is installed
 * js-beautify is another recommended auto formatter
 * sescript only outputs valid ecmascript syntax
-* a benefit of using sescript is that editor modes for scheme syntax and structural editing can be used. it is also trivial to create from scheme
+* a benefit of using sescript is that editor modes for scheme syntax and structural editing can be used
 * [other languages that compile to javascript](https://github.com/jashkenas/coffeescript/wiki/List-of-languages-that-compile-to-JS)
 
 # syntax reference
