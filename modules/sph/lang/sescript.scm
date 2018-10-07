@@ -28,7 +28,7 @@
   (define ses-default-load-paths
     (map ensure-trailing-slash (let (a (getenv "SES_LOAD_PATH")) (if a (string-split a #\:) null))))
 
-  (define-as ses-descend-sescript ht-create-symbol
+  (define-as ses-descend-sescript ht-create-symbol-q
     object* ses-object*
     let ses-let
     let* ses-let* nullary (l (a compile) (qq (lambda () (unquote-splicing a)))) ses-include)
@@ -39,7 +39,7 @@
   (define-as translated-infix list-q
     and bit-and bit-or bit-shift-right bit-shift-left bit-shift-right-fill bit-xor modulo or)
 
-  (define-as ses-descend-ecmascript ht-create-symbol
+  (define-as ses-descend-ecmascript ht-create-symbol-q
     array (l (a compile) (es-array (map compile a)))
     begin ses-begin
     case ses-case
