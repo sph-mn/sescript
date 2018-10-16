@@ -40,8 +40,11 @@
     (only (sph filesystem) search-load-path)
     (only (sph string) parenthesise regexp-match-replace)
     (only (sph tree) tree-contains?)
-    (only (sph two) alist->regexp-match-replacements)
     (only (srfi srfi-1) drop-right take-right))
+
+  (define (alist->regexp-match-replacements a)
+    "automatically converts strings at the prefix position to regular expressions"
+    (map (l (e) (pair (if (string? (first e)) (make-regexp (first e)) (first e)) (tail e))) a))
 
   (define identifier-replacements
     (alist->regexp-match-replacements
@@ -135,9 +138,10 @@
 
   (define (ses-set a compile) (es-set (list->alist (map compile a))))
 
-  (define (ses-object* a compile) "list -> sxml
-    special form of (object) where variable identifiers are the keys.
-    (object* a b c) = (object a a b b c c)"
+  (define (ses-object* a compile)
+    "list -> sxml
+     special form of (object) where variable identifiers are the keys.
+     (object* a b c) = (object a a b b c c)"
     (pair (q object) (fold-right (l (a result) (pairs a a result)) null a)))
 
   (define (ses-for a compile)
@@ -190,8 +194,9 @@
             (unquote (first vals)))))
       (_ (raise (q ses-syntax-error-let*)))))
 
-  (define (ses-numeric-boolean prefix a compile) "for infix operators that return booleans.
-    (= a b c) does not mean a===b===c in javascript but (a===b&&b===c)"
+  (define (ses-numeric-boolean prefix a compile)
+    "for infix operators that return booleans.
+     (= a b c) does not mean a===b===c in javascript but (a===b&&b===c)"
     (let (operator (if (eq? (q =) prefix) "===" (symbol->string prefix)))
       (string-join
         (map-segments 2 (l (a b) (parenthesise (string-append a operator b)))
