@@ -2,7 +2,6 @@
   (export
     ses-apply
     ses-begin
-    ses-case
     ses-chain
     ses-cond
     ses-define
@@ -21,6 +20,7 @@
     ses-object*
     ses-return
     ses-set
+    ses-switch
     ses-translated-infix
     ses-value
     ses-while)
@@ -81,6 +81,20 @@
                 (list
                   (pairs (first a-last) (first a-last-tail)
                     (apply append (map (compose add-return-statement list) (tail a-last-tail)))))))
+            ( (switch)
+              (list
+                (pair (first a-last)
+                  (match (tail a-last)
+                    ( (value b ...)
+                      (pair value
+                        (map
+                          (l (b)
+                            (match b
+                              ( (test consequent ... (quote break))
+                                (pair test
+                                  (append (add-return-statement consequent) (list (q break)))))
+                              ((test consequent ...) (pair test (add-return-statement consequent)))))
+                          b)))))))
             ( (set)
               ; at return to the set of the last variable
               (list
@@ -100,15 +114,15 @@
             (if (or (string-suffix? "*/\n" a) (string-suffix? ";" a)) a (string-append a ";"))))
         a)))
 
-  (define (ses-case a compile)
+  (define (ses-switch a compile)
     (match a
-      ( (value (test consequent ...) ...)
-        (es-switch (compile value)
+      ( (expression (value consequent ...) ...)
+        (es-switch (compile expression)
           (map
             (l (a b)
-              (pair (if (eq? (q else) a) a (if (list? a) (map compile a) (compile a)))
+              (pair (if (eq? (q default) a) a (if (list? a) (map compile a) (compile a)))
                 (map compile b)))
-            test consequent)))))
+            value consequent)))))
 
   (define (ses-chain a compile) (match (map compile a) ((name base a ...) (es-chain name base a))))
 

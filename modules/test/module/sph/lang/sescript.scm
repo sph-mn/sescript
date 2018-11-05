@@ -12,17 +12,11 @@
       (array #t) "[true];"
       (begin a->b a-b a! a& a?)
       "a_to_b;a_b;a_x;a_ampersand;a_p;"
-      (case a
-        ((b c d) #t))
-      "switch(a){case b:case c:case d:true;break};"
+      (switch a (1 "b" break) (2 "c" "d") (default "e") (3 "f"))
+      "switch(a){case 1:\"b\";break;case 2:\"c\";\"d\";default:\"e\";case 3:\"f\"};"
       (begin 1 a #t #\a "1" )
       "1;a;true;\"a\";\"1\";"
       (begin 1 (begin 2 3)) "1;2;3;"
-      (case (+ 1 2)
-        (2 #t #f)
-        (3 #t)
-        (else 4 5))
-      "switch(1+2){case 2:true;false;break;case 3:true;break;default:4;5;break};"
       (= 1 2 3) "(1===2)&&(2===3);"
       (and 1 2 3) "(1&&2&&3);"
       (array 1 2 3) "[1,2,3];"

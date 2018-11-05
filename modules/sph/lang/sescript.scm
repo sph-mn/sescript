@@ -42,7 +42,7 @@
   (define-as ses-descend-ecmascript ht-create-symbol-q
     array (l (a compile) (es-array (map compile a)))
     begin ses-begin
-    case ses-case
+    switch ses-switch
     chain ses-chain
     cond ses-cond
     declare (l (a compile) (es-declare (map ses-identifier a)))

@@ -102,19 +102,19 @@
         es-escape-single-char)
       "\""))
 
-  (define (es-switch value cases) "string ((test/symbol:else consequent ...) ...) -> string"
-    (string-append "switch" (parenthesise-ensure value)
+  (define (es-switch expression cases)
+    "expression ((value/symbol:default consequent ...) ...) -> string"
+    (string-append "switch" (parenthesise-ensure expression)
       (es-curly-brackets
         (string-join
           (map
             (l (a)
               (let (test (first a))
-                (if (eq? (q else) test)
-                  (string-append "default:" (string-join (append (tail a) (list "break")) ";"))
+                (if (eq? (q default) test) (string-append "default:" (string-join (tail a) ";"))
                   (string-append
                     (apply string-append
                       (map (l (a) (string-append "case " a ":")) (any->list test)))
-                    (string-join (append (tail a) (list "break")) ";")))))
+                    (string-join (tail a) ";")))))
             cases)
           ";"))))
 
