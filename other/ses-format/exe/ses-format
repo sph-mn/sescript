@@ -1,0 +1,11 @@
+#!/usr/bin/guile
+!#
+
+(import (sph) (sph cli) (sph lang ses-format) (sph lang scheme) (sph system reader))
+(define cli (cli-create))
+
+(define (ses-format-cli)
+  (let (options (cli))
+    (display (ses-format (port->datums (current-input-port) read-for-formatting)))))
+
+(ses-format-cli)

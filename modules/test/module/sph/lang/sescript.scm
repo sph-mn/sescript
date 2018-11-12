@@ -68,4 +68,6 @@
       (ses-insert "var a = 3") "var a = 3;"
       (set a 1) "a=1;"
       (set a 1 b 2 c 3) "a=1;b=2;c=3;"
+      (a (if* b c d) (l (e) f))
+      "a((b?c:d),(function(e){return(f)}));"
       )))
