@@ -54,7 +54,7 @@
         "->" "_to_"
         ".-" (pair "-" "_") ".&$" (pair "&" "_ampersand") "\\?" "_p" "./." (pair "/" "_slash_"))))
 
-  (define-syntax-rule (add-begin a) (if (length-one? a) (first a) (pair (q begin) a)))
+  (define-syntax-rule (add-begin a) (if (= 1 (length a)) (first a) (pair (q begin) a)))
   (define (contains-set? a) "list -> boolean" (and (list? a) (tree-contains? a (q set))))
 
   (define (add-return-statement a)
