@@ -5,6 +5,7 @@
 * possibly also useful as an intermediate language for applications that want to compile to ecmascript
 * status: should work, been around for a while, easy to maintain and extend
 * license: gpl3+. does not apply to generated code. generated code has your license
+* you can try it out [here](http://sph.mn/dynamic/syntax/sescript/javascript)
 * [homepage](http://sph.mn/c/view/7e)
 
 # examples
