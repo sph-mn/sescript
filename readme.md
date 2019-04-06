@@ -332,5 +332,6 @@ a=1;b=2;c=3;
 * support docstrings
 * add a command-line option to load custom syntax extensions from a file
 * translate scheme comments. scheme comments dont appear in the output, only ``(ses-comment "comment string")`` or ses-insert can be used
-* syntax checks and error messages
+* more syntax checks and error messages
+* remove support of nullary as a syntactic keyword as it can be implemented with javascript
 * an extension that supports hygienic macros and a scheme like module system. implement do-while as an example
