@@ -1,4 +1,4 @@
-#!/usr/bin/guile
+#!/usr/bin/env guile
 !#
 
 (import (sph) (sph cli) (sph lang ses-format) (sph lang scheme) (sph system reader))
