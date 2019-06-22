@@ -13,11 +13,7 @@
     (sph lang ecmascript expressions)
     (sph lang sescript expressions)
     (sph list)
-    (only (guile)
-      display
-      getenv
-      string-join
-      string-split)
+    (only (guile) display getenv string-join string-split)
     (only (sph filesystem) ensure-trailing-slash)
     (only (sph tree) tree-transform))
 
@@ -29,9 +25,7 @@
     (map ensure-trailing-slash (let (a (getenv "SES_LOAD_PATH")) (if a (string-split a #\:) null))))
 
   (define-as ses-descend-sescript ht-create-symbol-q
-    object* ses-object*
-    let ses-let
-    let* ses-let* nullary (l (a compile) (qq (lambda () (unquote-splicing a)))) ses-include)
+    object* ses-object* let ses-let let* ses-let* ses-include)
 
   (define-as identical-infix list-q + - * /)
   (define-as numeric-boolean list-q = > < >= <=)

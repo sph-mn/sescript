@@ -57,7 +57,6 @@
       (new obj) "new obj();"
       (new obj 3 5) "new obj(3,5);"
       (not 1) "!1;"
-      (nullary #t) "(function(){return(true)});"
       (object) "{};"
       (object a 2 b-c 3 "d" 4) "{a:2,b_c:3,\"d\":4};"
       (object* a b c) "{a:a,b:b,c:c};"

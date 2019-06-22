@@ -76,6 +76,11 @@
                 (list
                   (pairs (first a-last) (first a-last-tail)
                     (apply append (map (compose add-return-statement list) (tail a-last-tail)))))))
+            ( (set)
+              ; at return to the set of the last variable
+              (list
+                (list (q begin) (drop-right a-last 2)
+                  (list (q return) (pair (q set) (take-right a-last 2))))))
             ( (switch)
               (list
                 (pair (first a-last)
@@ -90,11 +95,6 @@
                                   (append (add-return-statement consequent) (list (q break)))))
                               ((test consequent ...) (pair test (add-return-statement consequent)))))
                           b)))))))
-            ( (set)
-              ; at return to the set of the last variable
-              (list
-                (list (q begin) (drop-right a-last 2)
-                  (list (q return) (pair (q set) (take-right a-last 2))))))
             (else (list (list (q return) a-last))))
           (list (list (q return) a-last))))))
 
