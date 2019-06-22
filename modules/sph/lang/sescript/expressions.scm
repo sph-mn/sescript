@@ -28,16 +28,11 @@
     (ice-9 match)
     (sph)
     (sph lang ecmascript expressions)
-    (sph lang scheme)
-    (sph list)
-    (only (guile)
-      compose
-      make-regexp
-      raise
-      string-suffix?
-      string-join)
+    (only (guile) compose make-regexp raise string-suffix? string-join)
     (only (sph alist) alist list->alist)
     (only (sph filesystem) search-load-path)
+    (only (sph lang scheme) file->datums)
+    (only (sph list) map-last-n map-segments map-slice)
     (only (sph string) parenthesise regexp-match-replace)
     (only (sph tree) tree-contains?)
     (only (srfi srfi-1) drop-right take-right))
@@ -61,7 +56,7 @@
     "(any:sescript ...) -> (any:sescript ...)
      add return statements to return the last expression or undefined at all exit points.
      it has to differentiate between expressions and other statements that cant be returned"
-    (list-replace-last a
+    (map-last-n 1 a
       (l (a-last)
         "any -> (any:replacements ...)
         only expressions that themselves return a value can be used in a return statement"

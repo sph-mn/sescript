@@ -7,6 +7,7 @@
 
   (test-execute-procedures-lambda
     (sescript->ecmascript
+      (define a (lambda (a b) 1 2 3)) "var a=(function(a,b){1;2;return(3);});"
       (array #\a) "[\"a\"];"
       (array "\"") "[\"\\\"\"];"
       (array #t) "[true];"
@@ -31,7 +32,6 @@
       (declare a b c) "var a,b,c;"
       (define a 1) "var a=1;"
       (define a 1 b 2) "var a=1,b=2;"
-      (define a (lambda (a b) 1 2 3)) "var a=(function(a,b){1;2;return(3);});"
       (define (a b c-d) 1 2 3) "function a(b,c_d){1;2;return(3);};"
       (for ((set index 0) (< index len) (set index (+ 1 index))) #t)
       "for(index=0;(index<len);index=(1+index)){true};"
