@@ -285,10 +285,6 @@ new obj(3,5);
 ->
 !1;
 
-(nullary #t)
-->
-(function(){return(true)});
-
 (object)
 ->
 {};
