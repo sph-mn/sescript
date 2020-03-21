@@ -1,9 +1,9 @@
 (define-module (sph lang sescript))
 
 (use-modules (srfi srfi-2) (sph)
-  (sph hashtable) (sph lang ecmascript expressions)
-  (sph lang sescript expressions) (sph list)
-  ((sph filesystem) #:select (ensure-trailing-slash)) ((sph tree) #:select (tree-transform)))
+  (sph hashtable) (sph lang sescript expressions)
+  (sph list) ((sph filesystem) #:select (ensure-trailing-slash))
+  ((sph tree) #:select (tree-transform)))
 
 (export ses-default-load-paths ses-descend-ecmascript
   ses-descend-sescript sescript->ecmascript
@@ -11,7 +11,7 @@
 
 (define sph-lang-sescript-description
   "compiles s-expressions to javascript/ecmascript.
-   mostly avoids introducing new features to be mostly a mapping")
+   sescript tries to avoid adding syntax to ecmascript and be mostly a mapping")
 
 (define ses-default-load-paths
   (map ensure-trailing-slash (let (a (getenv "SES_LOAD_PATH")) (if a (string-split a #\:) null))))
@@ -26,12 +26,12 @@
   (list-q and bit-and bit-or bit-shift-right bit-shift-left bit-shift-right-fill bit-xor modulo or))
 
 (define ses-descend-ecmascript
-  (ht-create-symbol-q array (l (a compile) (es-array (map compile a)))
+  (ht-create-symbol-q array ses-array
     begin ses-begin
     switch ses-switch
     chain ses-chain
     cond ses-cond
-    declare (l (a compile) (es-declare (map ses-identifier a)))
+    declare ses-declare
     define ses-define
     for ses-for
     get ses-get
@@ -39,7 +39,7 @@
     if* ses-if*
     l ses-lambda
     lambda ses-lambda
-    make-regexp (l (a compile) (apply es-regexp a))
+    make-regexp ses-regexp
     new (l (a compile) (string-append "new " (ses-apply a compile)))
     not (l (a compile) (string-append "!" (compile (first a))))
     object ses-object

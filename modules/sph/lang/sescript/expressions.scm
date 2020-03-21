@@ -1,21 +1,25 @@
 (define-module (sph lang sescript expressions))
 
 (use-modules (srfi srfi-1) (ice-9 match)
-  (sph) (sph lang ecmascript expressions)
-  ((sph alist) #:select (alist list->alist)) ((sph filesystem) #:select (search-load-path))
-  ((sph lang scheme) #:select (file->datums))
-  ((sph list) #:select (map-last-n map-segments map-slice))
-  ((sph string) #:select (parenthesise regexp-match-replace)) ((sph tree) #:select (tree-contains?)))
+  (sph) (sph alist)
+  ((sph filesystem) #:select (search-load-path)) ((sph lang scheme) #:select (file->datums))
+  (sph list) (sph string) ((sph tree) #:select (tree-contains?)))
 
-(export ses-apply ses-begin
-  ses-chain ses-cond
+(export ses-apply ses-array
+  ses-begin ses-chain
+  ses-cond ses-declare
   ses-define ses-for
   ses-get ses-identical-infix
   ses-identifier ses-if
   ses-if* ses-include
   ses-lambda ses-let
   ses-let* ses-numeric-boolean
-  ses-object ses-object* ses-return ses-set ses-switch ses-translated-infix ses-value ses-while)
+  ses-object ses-object*
+  ses-regexp ses-return ses-set ses-switch ses-translated-infix ses-value ses-while)
+
+(define sph-lang-sescript-description
+  "ecmascript string generation.
+   bindings with es- take only strings or lists of strings and return strings, ses- may take other scheme types")
 
 (define (alist->regexp-match-replacements a)
   "automatically converts strings at the prefix position to regular expressions"
@@ -74,7 +78,105 @@
           (else (list (list (q return) a-last))))
         (list (list (q return) a-last))))))
 
+(define es-escape-single-char
+  (alist "\"" "\\\"" "\n" "\\n" "\b" "\\b" "\f" "\\f" "\r" "\\r" "\t" "\\t" "\v" "\\v"))
+
+(define-syntax-rule (or-null-string a ...) (or a ... ""))
+(define (parenthesise-ensure a) (if (parenthesised? a) a (parenthesise a)))
+
+(define* (es-apply name #:optional a) "string (string ...) -> string"
+  (string-append name (if a (parenthesise-ensure (es-comma-join a)) "()")))
+
+(define (es-chain name base a) "string string (string ...) -> string"
+  (es-apply (string-append base "." name) a))
+
+(define (es-comma-join a) (string-join a ","))
+(define (es-curly-brackets a) (string-append "{" a "}"))
+(define (es-declare names) "list -> string" (string-append "var " (es-comma-join names)))
+
+(define* (es-define a) "((key . value) ...) -> string"
+  (string-append "var " (es-comma-join (map (l (a) (string-append (first a) "=" (tail a))) a))))
+
+(define (es-for init test update body)
+  (string-append "for" (parenthesise (string-append init ";" test ";" update))
+    (es-curly-brackets body)))
+
+(define* (es-function #:optional body formals name)
+  ( (if name identity parenthesise)
+    (string-append "function" (if name (string-append " " name) "")
+      (parenthesise (es-comma-join formals)) (es-curly-brackets body))))
+
+(define (es-get a . keys) (string-append a (es-square-brackets (string-join keys "]["))))
+
+(define (es-identifier a)
+  (cond
+    ((symbol? a) (symbol->string a))
+    ((string? a) a)
+    (else (raise (list (q es-error-cannot-convert-identifier) a)))))
+
+(define* (es-if-expression test consequent #:optional alternate)
+  (parenthesise (string-append test "?" consequent ":" (or alternate "undefined"))))
+
+(define* (es-if test consequent #:optional alternate)
+  (string-append "if" (parenthesise-ensure test)
+    (es-curly-brackets consequent)
+    (or-null-string (and alternate (string-append "else" (es-curly-brackets alternate))))))
+
+(define (es-object key/value) "((key . value) ...) -> string"
+  (es-curly-brackets (es-comma-join (alist-map (l (a b) (string-append a ":" b)) key/value))))
+
+(define (es-new name a) (string-append "new " (es-apply name a)))
+(define (es-square-brackets a) (string-append "[" a "]"))
+
+(define* (es-regexp pattern #:optional modifiers)
+  (string-append "/" pattern "/" (or-null-string modifiers)))
+
+(define (es-set a) "((name . value) ...) -> string"
+  (string-join (map (l (a) (string-append (first a) "=" (tail a))) a) ";"))
+
+(define (es-string a)
+  (string-enclose
+    (fold (l (a result) (string-replace-string result (first a) (tail a))) a es-escape-single-char)
+    "\""))
+
+(define (es-switch expression cases)
+  "expression ((value/symbol:default consequent ...) ...) -> string"
+  (string-append "switch" (parenthesise-ensure expression)
+    (es-curly-brackets
+      (string-join
+        (map
+          (l (a)
+            (let (test (first a))
+              (if (eq? (q default) test) (string-append "default:" (string-join (tail a) ";"))
+                (string-append
+                  (apply string-append (map (l (a) (string-append "case " a ":")) (any->list test)))
+                  (string-join (tail a) ";")))))
+          cases)
+        ";"))))
+
+(define* (es-try-catch-finally try #:optional catch-formal catch finally)
+  (string-append "try" (es-curly-brackets try)
+    (or-null-string
+      (and catch
+        (string-append "catch" (parenthesise (or-null-string catch-formal))
+          (es-curly-brackets catch))))
+    (or-null-string (and finally (string-append "finally" (es-curly-brackets finally))))))
+
+(define (es-value a) "handles the default conversions between scheme and ecmascript types"
+  (cond
+    ((symbol? a) (symbol->string a))
+    ((string? a) (es-string a))
+    ((number? a) (number->string a))
+    ((vector? a) (es-array (vector->list a)))
+    ((boolean? a) (if a "true" "false"))
+    ((char? a) (string-enclose (any->string a) "\""))
+    (else (raise (q es-error-cannot-convert-value)))))
+
+(define (es-array contents) "(string ...) -> string" (es-square-brackets (es-comma-join contents)))
+(define (ses-array a compile) (es-array (map compile a)))
 (define (ses-apply a compile) (es-apply (compile (first a)) (map compile (tail a))))
+(define (ses-declare a compile) (es-declare (map ses-identifier a)))
+(define (ses-regexp a compile) (apply es-regexp a))
 (define (ses-return a compile) (if (null? a) "return" (ses-apply (pair (q return) a) compile)))
 
 (define (ses-begin a compile)

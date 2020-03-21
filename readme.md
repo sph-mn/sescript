@@ -1,6 +1,6 @@
 * a simpler ecmascript/javascript syntax. ecmascript written as scheme-like s-expressions
 * the output, after formatting, is supposed to be as if originally written in ecmascript
-* supports all ecmascript 5
+* supports all es5
 * command-line compiler and scheme library
 * possibly also useful as an intermediate language for applications that want to compile to ecmascript
 * status: should work, been around for a while, easy to maintain and extend
@@ -94,7 +94,7 @@ examples
 ```
 
 # extension
-how to add your own syntax: this is currently only possible when compiling from scheme and not via the cli application. create a scheme file with new bindings, example below, and then use sescript->ecmascript-string or similar as usual
+how to add your own syntax: this is currently only possible when compiling with scheme and not via the sescript command-line interface. create a scheme file with new bindings, example below, and then use sescript->ecmascript-string or similar as usual
 ```
 (import (sph lang sescript) (rnrs hashtables))
 
@@ -102,13 +102,15 @@ how to add your own syntax: this is currently only possible when compiling from 
   (lambda (a compile)
     "(any:sescript-argument ...) procedure:recurse -> any:sescript
     create sescript that will be parsed again"
-    (list (quote if) a #t #f)))
+    (list (quote if) (car a) #t #f)))
 
-(hashtable-set! ses-descend-ecmascript (quote myprefix)
+(hashtable-set! ses-descend-ecmascript (quote myprefix2)
   (lambda (a compile)
     "(any:sescript-argument ...) procedure:recurse -> string:ecmascript
-     create ecmascript strings directly"
+     create final ecmascript strings directly"
      (string-join (map compile a) "\n")))
+
+(define code (quote (myprefix "test")))
 
 (sescript->ecmascript-string code)
 ```
@@ -329,4 +331,4 @@ a=1;b=2;c=3;
 * translate scheme comments. scheme comments dont appear in the output, only ``(ses-comment "comment string")`` or ses-insert can be used. could use guile-reader but because that is a difficult to handle dependency it might be better to preprocess and replace all comments with ses-comment expressions
 * add a command-line option to load custom syntax extensions from a file
 * more syntax checks and error messages
-* an extension that supports hygienic macros and a scheme like module system. it would be easy to add something that allows generating sescript code with scheme. for syntax-rules/syntax-case, pattern matching that supports nested lists would be needed, ice-9-match could be used or maybe the simple split-by-pattern from sph-list can be extended to support nested patterns
+* an extension that supports hygienic macros and a scheme like module system. it would be easy to add something that allows generating sescript code using inline scheme. for syntax-rules/syntax-case, pattern matching that supports nested lists would be needed, ice-9-match could be used or maybe the simple split-by-pattern from [sph-lib](https://github.com/sph-mn/sph-lib) (sph list) can be extended to support nested patterns
