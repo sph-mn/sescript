@@ -1,7 +1,11 @@
-#!/usr/bin/env guile
-!#
+#!/bin/sh -e
 
-(import (sph install))
+prefix="$1"
+site="$prefix/usr/share/guile/site"
 
-(install-cli-guile ("/usr/bin" #o755 "exe/ses")
-  (path-lib-scheme "modules/sph" "modules/test"))
+mkdir -p "$site"
+mkdir -p "$prefix/usr/bin"
+cp exe/ses "$prefix/usr/bin"
+chmod 755 "$prefix/usr/bin/ses"
+cp -rt "$site" modules/sph modules/test
+chmod -R 755 "$site/sph" "$site/test"

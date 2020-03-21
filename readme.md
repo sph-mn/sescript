@@ -64,7 +64,7 @@ options
 * [sph-lib](https://github.com/sph-mn/sph-lib)
 
 # installation
-run the installer, see ``./exe/install --help``
+run the install script, "./exe/install". it supports one optional argument, an install path prefix.
 
 alternatively
 * copy everything under modules/ into a directory that is in guiles default load path or $GUILE_LOAD_PATH
