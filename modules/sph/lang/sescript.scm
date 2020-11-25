@@ -319,11 +319,11 @@
 (define ses-descend-sescript
   (ht-create-symbol-q object* ses-object* let ses-let let* ses-let* ses-include))
 
-(define identical-infix (list-q + - * /))
-(define numeric-boolean (list-q = > < >= <=))
+(define identical-infix (q (+ - * /)))
+(define numeric-boolean (q (= > < >= <=)))
 
 (define translated-infix
-  (list-q and bit-and bit-or bit-shift-right bit-shift-left bit-shift-right-fill bit-xor modulo or))
+  (q (and bit-and bit-or bit-shift-right bit-shift-left bit-shift-right-fill bit-xor modulo or)))
 
 (define ses-descend-ecmascript
   (ht-create-symbol-q array ses-array
