@@ -327,8 +327,8 @@ a=1;b=2;c=3;
 
 # possible enhancements and ideas
 * support docstrings as is already implemented in sc
+* port the macro system from sc
 * es6 syntax: support new syntax (class, string templates, default parameters, object destructuring, async/await, import/export, const, let) and/or replace old syntax with new one (arrow functions for lambdas, still need a way to use the function keyword, coffeescript has -> => for that)
 * translate scheme comments. scheme comments dont appear in the output, only ``(ses-comment "comment string")`` or ses-insert can be used. could use guile-reader but because that is a difficult to handle dependency it might be better to preprocess and replace all comments with ses-comment expressions
 * add a command-line option to load custom syntax extensions from a file
 * more syntax checks and error messages
-* an extension that supports hygienic macros and a scheme like module system. it would be easy to add something that allows generating sescript code using inline scheme. for syntax-rules/syntax-case, pattern matching that supports nested lists would be needed, ice-9-match could be used or maybe the simple split-by-pattern from [sph-lib](https://github.com/sph-mn/sph-lib) (sph list) can be extended to support nested patterns
