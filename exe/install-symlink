@@ -1,0 +1,18 @@
+#!/bin/sh -e
+
+prefix="$1"
+site="$prefix/usr/share/guile/site"
+pwd=$(pwd)
+
+if test -f "$site/sph/sescript.scm"
+then
+  rm -rf "$site/sph/sescript"*
+fi
+
+mkdir -p "$site" "$prefix/usr/bin"
+cp -sf "$pwd/exe/ses" "$prefix/usr/bin/ses"
+cp -rs "$pwd/modules/sph" "$site"
+
+chmod 755 "$prefix/" "$site" "$site/sph" "$prefix/usr" "$prefix/usr/bin"
+chmod 755 "$prefix/usr/bin/ses"
+chmod -R 755 "$site/sph/sescript"

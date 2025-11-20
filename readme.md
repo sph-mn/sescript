@@ -74,7 +74,7 @@ try to run ``ses --help`` to see if it works
 
 # usage from scheme
 ```
-(import (sph lang sescript))
+(import (sph sescript))
 ```
 
 examples
@@ -96,7 +96,7 @@ examples
 # extension
 how to add your own syntax: this is currently only possible when compiling with scheme and not via the sescript command-line interface. create a scheme file with new bindings, example below, and then use sescript->ecmascript-string or similar as usual
 ```
-(import (sph lang sescript) (rnrs hashtables))
+(import (sph sescript) (rnrs hashtables))
 
 (hashtable-set! ses-descend-sescript (quote myprefix)
   (lambda (a compile)

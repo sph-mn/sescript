@@ -1,15 +1,15 @@
-(library (sph lang ses-format)
+(library (sph sescript ses-format)
   (export
     ses-format)
   (import
     (ice-9 match)
-    (sph)
-    (sph hashtable)
-    (sph lang scm-format)
-    (sph lang scm-format format)
-    (sph string)
+    (sph sescript sph)
+    (sph sescript sph hashtable)
+    (sph sescript sph lang scm-format)
+    (sph sescript sph lang scm-format format)
+    (sph sescript sph string)
     (only (guile) inf string-join)
-    (only (sph list) map-slice))
+    (only (sph sescript sph list) map-slice))
 
   (define sph-lang-ses-format-description
     "formatter for sc (sph-sc) source code. also serves as an example of how custom formatters can be defined")

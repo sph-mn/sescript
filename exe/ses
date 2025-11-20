@@ -1,9 +1,9 @@
 #!/usr/bin/env guile
 !#
 
-(use-modules (sph) (sph filesystem)
-  (sph process) (sph alist)
-  (sph list) (sph cli) (srfi srfi-1) (sph other) (sph lang sescript))
+(use-modules (sph sescript sph) (sph sescript sph filesystem)
+  (sph sescript sph process) (sph sescript sph alist)
+  (sph sescript sph list) (sph sescript sph cli) (srfi srfi-1) (sph sescript sph other) (sph sescript))
 
 (define uglifyjs
   (let (uglifyjs-path (search-env-path-one "uglifyjs"))
@@ -41,16 +41,17 @@
           OPEN_WRITE (uglifyjs post-process-action))
         (each (l (a) (process a destination)) sources)))))
 
-(let
-  (options
-    ( (cli-create #:description
-        "compile sescript to ecmascript. read from files or standard input,
+(define description "compile sescript to ecmascript. read from files or standard input,
         and write to a file or standard output depending on if paths are given as arguments.
         input/output depends on the number of given paths:
         none: read from standard input and write to standard output
         one: read from file and write to standard output
         two: read from the first file and write to the second
-        more: read from all files except the last one and write to the last one"
+        more: read from all files except the last one and write to the last one")
+
+(let
+  (options
+    ( (cli-create #:description description
         #:options
         (qq
           ( (format #:names #\f #:description "format output with uglifyjs")

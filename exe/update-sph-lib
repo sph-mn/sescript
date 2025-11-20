@@ -1,0 +1,30 @@
+#!/bin/sh
+
+sph_lib_root="$1"
+destination="$PWD/modules/sph/sescript/sph"
+
+if test -d "$destination"
+then
+  rm -r "$destination"
+fi
+
+mkdir -p "$destination"
+
+cd "$sph_lib_root/modules"
+cp sph.scm "$destination/.."
+cd sph
+cp module.scm tree.scm math.scm number.scm io.scm vector.scm other.scm \
+  string.scm hashtable.scm alist.scm process.scm list.scm filesystem.scm cli.scm test.scm "$destination"
+
+mkdir -p "$destination"/lang
+cp lang/scheme.scm lang/scm-format.scm "$destination/lang"
+
+mkdir -p "$destination"/system
+cp system/reader.scm "$destination/system"
+
+mkdir -p "$destination"/test
+cp test/* "$destination/test"
+
+# replace include paths in copied files
+sed -i 's@(sph @(sph sescript sph @g' "$destination"/*.scm "$destination"/*/*.scm
+sed -i 's@(sph)@(sph sescript sph)@g' "$destination"/../*.scm "$destination"/*.scm "$destination"/*/*.scm

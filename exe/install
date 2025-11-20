@@ -2,10 +2,16 @@
 
 prefix="$1"
 site="$prefix/usr/share/guile/site"
+pwd=$(pwd)
 
-mkdir -p "$site"
-mkdir -p "$prefix/usr/bin"
-cp exe/ses "$prefix/usr/bin"
+if test -f "$site/sph/sescript.scm"
+then
+  rm -rf "$site/sph/sescript"*
+fi
+
+mkdir -p "$site" "$prefix/usr/bin"
+chmod 755 "$site" "$prefix/" "$prefix/usr" "$prefix/usr/bin"
+cp "$pwd/exe/ses" "$prefix/usr/bin/ses"
 chmod 755 "$prefix/usr/bin/ses"
-cp -rt "$site" modules/sph modules/test
-chmod -R 755 "$site/sph" "$site/test"
+cp -r "$pwd/modules/sph" "$site"
+chmod -R 755 "$site/sph/sescript"

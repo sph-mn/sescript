@@ -1,11 +1,12 @@
-(define-module (sph lang sescript))
+(define-module (sph sescript))
 
 (use-modules (srfi srfi-1) (srfi srfi-2)
-  (ice-9 match) (sph)
-  (sph string) (sph hashtable)
-  (sph list) (sph alist)
-  ((sph filesystem) #:select (ensure-trailing-slash search-load-path))
-  ((sph lang scheme) #:select (file->datums)) ((sph tree) #:select (tree-contains? tree-transform)))
+  (ice-9 match) (sph sescript sph)
+  (sph sescript sph string) (sph sescript sph hashtable)
+  (sph sescript sph list) (sph sescript sph alist)
+  ((sph sescript sph filesystem) #:select (ensure-trailing-slash search-load-path))
+  ((sph sescript sph lang scheme) #:select (file->datums))
+  ((sph sescript sph tree) #:select (tree-contains? tree-transform)))
 
 (export ses-default-load-paths ses-descend-ecmascript
   ses-descend-sescript sescript->ecmascript

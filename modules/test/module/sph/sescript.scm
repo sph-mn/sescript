@@ -1,6 +1,6 @@
-(define-test-module (test module sph lang sescript)
+(define-test-module (test module sph sescript)
   (import
-    (sph lang sescript))
+    (sph sescript))
 
   (define-test (sescript->ecmascript input)
     (call-with-output-string (l (port) (sescript->ecmascript (list input) port))))
@@ -14,6 +14,7 @@
       (begin a->b a-b a! a& a?)
       "a_to_b;a_b;a_x;a_ampersand;a_p;"
       (switch a (1 "b" break) (2 "c" "d") (default "e") (3 "f"))
+
       "switch(a){case 1:\"b\";break;case 2:\"c\";\"d\";default:\"e\";case 3:\"f\"};"
       (begin 1 a #t #\a "1" )
       "1;a;true;\"a\";\"1\";"
