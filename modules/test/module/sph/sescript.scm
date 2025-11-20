@@ -1,6 +1,6 @@
-(define-test-module (test module sph lang sescript)
+(define-test-module (test module sph sescript)
   (import
-    (sph lang sescript))
+    (sph sescript))
 
   (define-test (sescript->ecmascript input)
     (call-with-output-string (l (port) (sescript->ecmascript (list input) port))))

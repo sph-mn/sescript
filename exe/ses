@@ -1,9 +1,40 @@
 #!/usr/bin/env guile
 !#
 
-(use-modules (sph) (sph filesystem)
-  (sph process) (sph alist)
-  (sph list) (sph cli) (srfi srfi-1) (sph other) (sph lang sescript))
+(use-modules (ice-9 popen) (srfi srfi-1) (sph sescript sph) (sph sescript) (sph sescript sph cli))
+
+(define (execute-with-pipe proc mode path . arguments)
+  "procedure integer string list -> any
+   execute a program with a pipe connected to its standard-output and/or standard-input and pass it as one port to \"proc\".
+   mode can be one of the guile variables OPEN_READ OPEN_WRITE OPEN_BOTH"
+  (let (port (apply open-pipe* mode path arguments)) (begin-first (proc port) (close-pipe port))))
+
+(define-syntax-rule (begin-first result expression ...) ((l (a) expression ... a) result))
+
+(define (first-or-false a)
+  "list -> any/false
+   give the first element of a list if it is not null, otherwise false"
+  (if (null? a) #f (first a)))
+
+(define (search-env-path a)
+  "(string ...) -> (string ...)
+   search for any match of paths \"a\" in the directories in the PATH environment variable and result in the full path.
+   similar to guiles %search-load-path but does not consider filename extensions"
+  (let*
+    ( (path-parsed (parse-path (getenv "PATH")))
+      (search-path
+        (l (a)
+          (any (l (e) (let (path (string-append e "/" a)) (if (file-exists? path) path #f)))
+            path-parsed))))
+    (map search-path a)))
+
+(define (search-env-path-one a) (first-or-false (search-env-path (list a))))
+
+(define-syntax-rules alist-ref ((a k d) ((l (r) (if r (tail r) d)) (assoc k a)))
+  ((a k) (assoc-ref a k)))
+
+(define-syntax-rule (alist-bind alist (key ...) body ...)
+  ((lambda (a) ((lambda (key ...) body ...) (alist-ref a (quote key)) ...)) alist))
 
 (define uglifyjs
   (let (uglifyjs-path (search-env-path-one "uglifyjs"))
@@ -41,16 +72,18 @@
           OPEN_WRITE (uglifyjs post-process-action))
         (each (l (a) (process a destination)) sources)))))
 
+(define description
+  "compile sescript to ecmascript. read from files or standard input,
+   and write to a file or standard output depending on if paths are given as arguments.
+   input/output depends on the number of given paths:
+   none: read from standard input and write to standard output
+   one: read from file and write to standard output
+   two: read from the first file and write to the second
+   more: read from all files except the last one and write to the last one")
+
 (let
   (options
-    ( (cli-create #:description
-        "compile sescript to ecmascript. read from files or standard input,
-        and write to a file or standard output depending on if paths are given as arguments.
-        input/output depends on the number of given paths:
-        none: read from standard input and write to standard output
-        one: read from file and write to standard output
-        two: read from the first file and write to the second
-        more: read from all files except the last one and write to the last one"
+    ( (cli-create #:description description
         #:options
         (qq
           ( (format #:names #\f #:description "format output with uglifyjs")

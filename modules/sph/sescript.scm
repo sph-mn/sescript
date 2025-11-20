@@ -1,11 +1,8 @@
-(define-module (sph lang sescript))
+(define-module (sph sescript))
 
-(use-modules (srfi srfi-1) (srfi srfi-2)
-  (ice-9 match) (sph)
-  (sph string) (sph hashtable)
-  (sph list) (sph alist)
-  ((sph filesystem) #:select (ensure-trailing-slash search-load-path))
-  ((sph lang scheme) #:select (file->datums)) ((sph tree) #:select (tree-contains? tree-transform)))
+(use-modules (sph sescript sph) (srfi srfi-1)
+  (srfi srfi-2) (ice-9 match)
+  (ice-9 regex) (rnrs io ports) (rnrs hashtables) ((rnrs hashtables) #:prefix rnrs-))
 
 (export ses-default-load-paths ses-descend-ecmascript
   ses-descend-sescript sescript->ecmascript
@@ -16,12 +13,193 @@
    sescript tries to avoid adding syntax to ecmascript and be mostly a mapping.
    bindings with es- take only strings or lists of strings and return strings, ses- may take other scheme types")
 
+(define ht-make rnrs-make-hashtable)
+(define ht-hash-equal rnrs-equal-hash)
+(define ht-hash-symbol rnrs-symbol-hash)
+
+(define* (ht-from-list a #:optional (equal-proc equal?) (hash-proc ht-hash-equal))
+  "convert a list to an r6rs standard library hashtable. nested lists are not converted to a hash.
+   example
+   (ht-ref (ht-from-list (list 'a 1 'b 2)) 'b #f)
+   -> 2"
+  (let (result (ht-make hash-proc equal-proc))
+    (fold (l (value key) (if key (begin (ht-set! result key value) #f) value)) #f a) result))
+
+(define-syntax-rules ht-ref ((h k d) (rnrs-hashtable-ref h k d)) ((h k) (hashtable-ref h k #f)))
+(define ht-set! hashtable-set!)
+
+(define-syntax-rules ht-create-symbol-q (() (ht-make ht-hash-symbol eq?))
+  ((associations ...) (ht-from-list (quote-odd associations ...) eq? ht-hash-symbol)))
+
+(define alist-prepend acons)
+
+(define (fold-multiple f a . custom-state-values)
+  (if (null? a) custom-state-values
+    (apply fold-multiple f (tail a) (apply f (first a) custom-state-values))))
+
+(define list->alist
+  (let (proc (l (a alt prev r) (if alt (list #f #f (alist-prepend prev a r)) (list #t a r))))
+    (lambda (lis)
+      (if (null? lis) lis
+        (let (r (fold-multiple proc (tail lis) #t (first lis) (list)))
+          (reverse!
+            (if (first r) (pair (list (list-ref r 1)) (first (tail (tail r))))
+              (first (tail (tail r))))))))))
+
+(define (alist . key/value) (list->alist key/value))
+(define (alist-map proc a) (map (l (a) (proc (first a) (tail a))) a))
+
+(define* (search-load-path path #:optional (load-paths %load-path))
+  (any
+    (l (base-path)
+      (let (full-path (string-append base-path path)) (if (file-exists? full-path) full-path #f)))
+    load-paths))
+
+(define (ensure-trailing-slash str) "string -> string"
+  (if (or (string-null? str) (not (eqv? #\/ (string-ref str (- (string-length str) 1)))))
+    (string-append str "/") str))
+
+(define (any->list a) (if (list? a) a (list a)))
+
+(define (map-last-n n b f)
+  (if (null? b) b
+    (apply-values (l (last-n rest) (append (reverse rest) (any->list (apply f (reverse last-n)))))
+      (split-at (reverse b) n))))
+
+(define (map-segments size f a)
+  (fold-segments size (l (result . a) (append result (list (apply f a)))) (list) a))
+
+(define (map-slice slice-length f a)
+  (let loop ((rest a) (slice (list)) (slice-ele-length 0) (r (list)))
+    (if (null? rest) (reverse (if (null? slice) r (pair (apply f (reverse slice)) r)))
+      (if (= slice-length slice-ele-length)
+        (loop (tail rest) (list (first rest)) 1 (pair (apply f (reverse slice)) r))
+        (loop (tail rest) (pair (first rest) slice) (+ 1 slice-ele-length) r)))))
+
+(define (fold-segments size f init a)
+  (let loop ((rest a) (buf (list)) (r init) (count size))
+    (if (null? rest) (if (null? buf) r (apply f r buf))
+      (if (< count 1) (loop (tail rest) (append (tail buf) (list (first rest))) (apply f r buf) 0)
+        (loop (tail rest) (append buf (list (first rest))) r (- count 1))))))
+
+(define (regexp-match-replace a replacements)
+  (fold
+    (l (a result)
+      (fold-matches (first a) result
+        result
+        (l (match result)
+          (if (pair? (tail a))
+            (string-replace-string result (match:substring match)
+              (string-replace-string (match:substring match) (first (tail a)) (tail (tail a))))
+            (string-replace-string result (match:substring match) (tail a))))))
+    a replacements))
+
+(define (string-enclose a enclose-str) (string-append enclose-str a enclose-str))
+(define (parenthesize a) (string-append "(" a ")"))
+(define (parenthesized? a) (string-brackets-enclosed? a #\( #\)))
+
+(define (string-indices a search-string)
+  (let ((search-string-length (string-length search-string)) (a-length (string-length a)))
+    (let loop ((index (string-contains a search-string)))
+      (if index
+        (if (= index a-length) (list index)
+          (pair index
+            (loop (string-contains a search-string (+ index (max 1 search-string-length))))))
+        (list)))))
+
+(define (string-brackets-enclosed? a start-char end-char)
+  (let (len (string-length a))
+    (and (< 1 len) (eq? start-char (string-ref a 0))
+      (eq? end-char (string-ref a (- len 1)))
+      (let loop ((index 1) (depth 1))
+        (cond
+          ((= depth 0) (= len index))
+          ( (< index len)
+            (loop (+ 1 index)
+              (cond
+                ((eqv? start-char (string-ref a index)) (+ depth 1))
+                ((eqv? end-char (string-ref a index)) (- depth 1))
+                (else depth))))
+          (else #f))))))
+
+(define* (tree-contains? a search-value #:optional (equal? equal?))
+  (any (l (a) (or (equal? a search-value) (and (list? a) (tree-contains? a search-value)))) a))
+
+(define (tree-transform-ascend rest leaf-list recurse-descend ascend terminal states)
+  (if (null? rest) (apply ascend (reverse leaf-list) states)
+    (let (a (first rest))
+      (apply
+        (l (a . states)
+          (tree-transform-ascend (tail rest) (pair a leaf-list)
+            recurse-descend ascend terminal states))
+        (apply (if (list? a) recurse-descend terminal) a states)))))
+
+(define (tree-transform* a descend ascend terminal . states)
+  (letrec
+    ( (recurse-descend
+        (lambda (a . states)
+          (if (and (list? a) (not (null? a)))
+            (apply
+              (l (r continue? . states)
+                (if continue?
+                  (if r (apply recurse-descend r states)
+                    (tree-transform-ascend a (list) recurse-descend ascend terminal states))
+                  (pair r states)))
+              (apply descend a recurse-descend states))
+            (apply terminal a states)))))
+    (apply recurse-descend a states)))
+
+(define (tree-transform a descend ascend terminal)
+  (first
+    (tree-transform* a (l (a re-descend) (descend a (compose first re-descend)))
+      (compose list ascend) (compose list terminal))))
+
 (define (alist->regexp-match-replacements a)
   "automatically converts strings at the prefix position to regular expressions"
   (map (l (e) (pair (if (string? (first e)) (make-regexp (first e)) (first e)) (tail e))) a))
 
-"format: (regexp search-string . replacement)"
-"replaced in order"
+(define* (port->datums port #:optional (get-datum get-datum))
+  (let loop ((a (get-datum port))) (if (eof-object? a) (list) (pair a (loop (get-datum port))))))
+
+(define* (file->datums path #:optional (get-datum get-datum))
+  (call-with-input-file path (l (port) (port->datums port get-datum))))
+
+(define (any->string a)
+  "any -> string
+   generalized string conversion function.
+   get the string representation for the value of an object.
+   symbols like \".\" are converted to \"#{.}\" using display."
+  (if (string? a) a
+    (if (symbol? a) (symbol->string a) (call-with-output-string (l (port) (display a port))))))
+
+(define (string-replace-string a replace replacement)
+  "string string string -> string
+   replace all occurences of string \"replace\" inside string \"a\" with string \"replacement\".
+   tests have shown it to be up to 28x times faster than regexp-substitute/global (guile2.06 22x, guile3 5.75-28x).
+   this procedure is quite nice to debug - comment out one or all string-copy! calls and
+   the result string will be a partial result"
+  (let (indices (string-indices a replace))
+    (if (null? indices) a
+      (let
+        ( (replace-length (string-length replace)) (replacement-length (string-length replacement))
+          (a-length (string-length a)))
+        "calculate result string size and create result string"
+        (let ((r-length (+ a-length (* (length indices) (- replacement-length replace-length)))))
+          (let (r (make-string r-length))
+            "each match index, copy characters before match-end to the result string"
+            (let loop
+              ((r-index 0) (prev-index 0) (cur-index (first indices)) (rest (tail indices)))
+              (string-copy! r r-index a prev-index cur-index)
+              (let (r-index (- r-index (- prev-index cur-index)))
+                (string-copy! r r-index replacement)
+                (if (null? rest)
+                  (begin
+                    (if (< (+ cur-index replace-length) a-length)
+                      (string-copy! r (+ r-index replacement-length)
+                        a (+ cur-index replace-length) a-length))
+                    r)
+                  (loop (+ r-index replacement-length) (+ cur-index replace-length)
+                    (first rest) (tail rest)))))))))))
 
 (define identifier-replacements
   (alist->regexp-match-replacements
@@ -77,10 +255,10 @@
   (alist "\"" "\\\"" "\n" "\\n" "\b" "\\b" "\f" "\\f" "\r" "\\r" "\t" "\\t" "\v" "\\v"))
 
 (define-syntax-rule (or-null-string a ...) (or a ... ""))
-(define (parenthesise-ensure a) (if (parenthesised? a) a (parenthesise a)))
+(define (parenthesize-ensure a) (if (parenthesized? a) a (parenthesize a)))
 
 (define* (es-apply name #:optional a) "string (string ...) -> string"
-  (string-append name (if a (parenthesise-ensure (es-comma-join a)) "()")))
+  (string-append name (if a (parenthesize-ensure (es-comma-join a)) "()")))
 
 (define (es-chain name base a) "string string (string ...) -> string"
   (es-apply (string-append base "." name) a))
@@ -93,13 +271,13 @@
   (string-append "var " (es-comma-join (map (l (a) (string-append (first a) "=" (tail a))) a))))
 
 (define (es-for init test update body)
-  (string-append "for" (parenthesise (string-append init ";" test ";" update))
+  (string-append "for" (parenthesize (string-append init ";" test ";" update))
     (es-curly-brackets body)))
 
 (define* (es-function #:optional body formals name)
-  ( (if name identity parenthesise)
+  ( (if name identity parenthesize)
     (string-append "function" (if name (string-append " " name) "")
-      (parenthesise (es-comma-join formals)) (es-curly-brackets body))))
+      (parenthesize (es-comma-join formals)) (es-curly-brackets body))))
 
 (define (es-get a . keys) (string-append a (es-square-brackets (string-join keys "]["))))
 
@@ -110,10 +288,10 @@
     (else (raise (list (q es-error-cannot-convert-identifier) a)))))
 
 (define* (es-if-expression test consequent #:optional alternate)
-  (parenthesise (string-append test "?" consequent ":" (or alternate "undefined"))))
+  (parenthesize (string-append test "?" consequent ":" (or alternate "undefined"))))
 
 (define* (es-if test consequent #:optional alternate)
-  (string-append "if" (parenthesise-ensure test)
+  (string-append "if" (parenthesize-ensure test)
     (es-curly-brackets consequent)
     (or-null-string (and alternate (string-append "else" (es-curly-brackets alternate))))))
 
@@ -136,7 +314,7 @@
 
 (define (es-switch expression cases)
   "expression ((value/symbol:default consequent ...) ...) -> string"
-  (string-append "switch" (parenthesise-ensure expression)
+  (string-append "switch" (parenthesize-ensure expression)
     (es-curly-brackets
       (string-join
         (map
@@ -153,7 +331,7 @@
   (string-append "try" (es-curly-brackets try)
     (or-null-string
       (and catch
-        (string-append "catch" (parenthesise (or-null-string catch-formal))
+        (string-append "catch" (parenthesize (or-null-string catch-formal))
           (es-curly-brackets catch))))
     (or-null-string (and finally (string-append "finally" (es-curly-brackets finally))))))
 
@@ -238,7 +416,7 @@
 (define (ses-get a compile) "string string ... -> string" (apply es-get (map compile a)))
 
 (define (ses-identical-infix prefix a compile)
-  (parenthesise (string-join (map compile a) (symbol->string prefix))))
+  (parenthesize (string-join (map compile a) (symbol->string prefix))))
 
 (define (ses-identifier a) "symbol/any -> string/any"
   (if (symbol? a) (regexp-match-replace (symbol->string a) identifier-replacements) a))
@@ -279,18 +457,18 @@
    (= a b c) does not mean a===b===c in javascript but (a===b&&b===c)"
   (let (operator (if (eq? (q =) prefix) "===" (symbol->string prefix)))
     (string-join
-      (map-segments 2 (l (a b) (parenthesise (string-append a operator b)))
-        (map (l (a) (if (contains-set? a) (parenthesise (compile a)) (compile a))) a))
+      (map-segments 2 (l (a b) (parenthesize (string-append a operator b)))
+        (map (l (a) (if (contains-set? a) (parenthesize (compile a)) (compile a))) a))
       "&&")))
 
 (define (ses-object a compile) (es-object (list->alist (map compile a))))
 
 (define (ses-translated-infix prefix a compile)
-  (parenthesise
+  (parenthesize
     (string-join
       (map
         (l (a) "consider cases like a&&b=c"
-          (if (contains-set? a) (parenthesise (compile a)) (compile a)))
+          (if (contains-set? a) (parenthesize (compile a)) (compile a)))
         a)
       (case prefix
         ((and) "&&")
@@ -309,9 +487,9 @@
   (match a
     ( (test body ...)
       (string-append "while"
-        (if (and (list? test) (eqv? (q set) (first test))) (parenthesise (compile test))
+        (if (and (list? test) (eqv? (q set) (first test))) (parenthesize (compile test))
           (compile test))
-        (parenthesise (compile (add-begin body)))))))
+        (parenthesize (compile (add-begin body)))))))
 
 (define ses-default-load-paths
   (map ensure-trailing-slash (let (a (getenv "SES_LOAD_PATH")) (if a (string-split a #\:) null))))
